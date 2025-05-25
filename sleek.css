@@ -5,6 +5,24 @@
 	z-index: -99;
 }
 
+body, html {
+	padding: 0; margin: 0;
+	width: 100%; height: 100%;
+  overflow: hidden; /*  Убираем скролл */
+}
+
+body {
+  	background-image: url("spirit_main_photo_by_anbs.png"); /* Путь к вашей картинке */
+  	background-size: cover; /* Масштабирует картинку, чтобы покрыть весь фон */
+  	background-repeat: no-repeat; /* Отключает повторение картинки */
+  	background-attachment: fixed; /* Фиксирует фон при прокрутке страницы */
+	font-family: 'vksans';
+	font-size: 16px;
+	text-shadow: 1px 1px 0px rgb(0, 0, 0);
+	color: rgb(255,255,255);
+	background-color: black;
+}
+
 video {
 	position: fixed; 
 	right: 0; 
