@@ -12,6 +12,10 @@ body {
   color: white; /* Цвет текста, чтобы был виден на фоне */
   margin: 0; /* Убирает стандартные отступы body */
   padding: 20px; /* Добавляет отступы для текста, чтобы он не прилипал к краям */
+  height: 100vh; /* Занимает всю высоту экрана */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Размещает контент вверху и "Загрузка..." внизу */
 }
 
 .content {
@@ -27,15 +31,33 @@ h1 {
 p {
   line-height: 1.6;
 }
+
+#loading {
+  text-align: center;
+  padding: 20px;
+  font-size: 20px;
+}
 </style>
 </head>
 <body>
+  <div id="loading">Загрузка<span id="dots"></span></div>
 
-  <div class="content">
-    <h1>Добро пожаловать!</h1>
-    <p>Это пример сайта с фоновым изображением.  Замените "ваша_картинка.jpg" на имя файла вашего изображения.</p>
-    <p>Вы можете добавить больше контента на эту страницу.  Используйте CSS для дальнейшей стилизации элементов.</p>
-  </div>
+  <script>
+    const dotsElement = document.getElementById('dots');
+    let dotCount = 0;
+
+    function animateDots() {
+      let dots = '';
+      for (let i = 0; i < dotCount; i++) {
+        dots += '.';
+      }
+      dotsElement.textContent = dots;
+
+      dotCount = (dotCount + 1) % 4; // 0, 1, 2, 3, 0...
+    }
+
+    setInterval(animateDots, 1000); // Обновляем анимацию каждую секунду (1000 мс)
+  </script>
 
 </body>
 </html>
