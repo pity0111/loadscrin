@@ -1,7 +1,41 @@
 <!DOCTYPE html>
 <html>
+<head>
+<title>Фон сайта - Ваша картинка</title>
+<style>
+body {
+  background-image: url("spirit_main_photo_by_anbs.png"); /* Путь к вашей картинке */
+  background-size: cover; /* Масштабирует картинку, чтобы покрыть весь фон */
+  background-repeat: no-repeat; /* Отключает повторение картинки */
+  background-attachment: fixed; /* Фиксирует фон при прокрутке страницы */
+  font-family: sans-serif; /* Шрифт для текста */
+  color: white; /* Цвет текста, чтобы был виден на фоне */
+  margin: 0; /* Убирает стандартные отступы body */
+  padding: 20px; /* Добавляет отступы для текста, чтобы он не прилипал к краям */
+}
+
+.content {
+  background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон для контента */
+  padding: 20px;
+  border-radius: 10px;
+}
+
+h1 {
+  text-align: center;
+}
+
+p {
+  line-height: 1.6;
+}
+</style>
+</head>
 <body>
-<h1>Hello World</h1>
-<p>I'm hosted with dsadas.</p>
+
+  <div class="content">
+    <h1>Добро пожаловать!</h1>
+    <p>Это пример сайта с фоновым изображением.  Замените "ваша_картинка.jpg" на имя файла вашего изображения.</p>
+    <p>Вы можете добавить больше контента на эту страницу.  Используйте CSS для дальнейшей стилизации элементов.</p>
+  </div>
+
 </body>
 </html>
