@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Фон сайта - Ваша картинка</title>
+<title>SpiritRP</title>
 <style>
 body {
   background-image: url("spirit_main_photo_by_anbs.png"); /* Путь к вашей картинке */
@@ -16,6 +16,11 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between; /* Размещает контент вверху и "Загрузка..." внизу */
+  overflow: hidden; /*  Убираем скролл */
+}
+
+html {
+    overflow: hidden; /*  Убираем скролл у html тоже */
 }
 
 .content {
@@ -36,6 +41,7 @@ p {
   text-align: center;
   padding: 20px;
   font-size: 20px;
+  margin-bottom: 0; /* Убираем отступ снизу, если он есть */
 }
 </style>
 </head>
