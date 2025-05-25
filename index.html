@@ -39,12 +39,10 @@ p {
 
 #loading {
   text-align: center;
-  padding: 20px;
+ /* padding: 20px; */
   font-size: 20px;
   margin-top: 80%;
-  margin-bottom: 20px; /* Добавлен отступ снизу */
-  position: relative; /* Добавлено для лучшего позиционирования */
-  bottom: 0; /* Привязка к нижней части */
+  /*margin-bottom: 20px;  Добавлен отступ снизу */
 }
 </style>
 </head>
@@ -62,10 +60,10 @@ p {
       }
       dotsElement.textContent = dots;
 
-      dotCount = (dotCount + 1) % 4; // 0, 1, 2, 3, 0...
+      dotCount = (dotCount + 1) % 4;
     }
 
-    setInterval(animateDots, 1000); // Обновляем анимацию каждую секунду (1000 мс)
+    setInterval(animateDots, 1000);
   </script>
 
 </body>
