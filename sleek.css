@@ -12,7 +12,7 @@ body, html {
 }
 
 body {
-  	background-image: url("spirit_main_photo_by_anbs.png"); /* Путь к вашей картинке */
+  	background-image: url("fon.png"); /* Путь к вашей картинке */
   	background-size: cover; /* Масштабирует картинку, чтобы покрыть весь фон */
   	background-repeat: no-repeat; /* Отключает повторение картинки */
   	background-attachment: fixed; /* Фиксирует фон при прокрутке страницы */
