@@ -34,10 +34,44 @@ p {
   top: 95%;
   /*margin-bottom: 20px;  Добавлен отступ снизу */
 }
+
+#image-container {
+  width: 200px; /*  Ширина контейнера (квадрат) */
+  height: 200px; /*  Высота контейнера (квадрат) */
+  overflow: hidden; /*  Обрезаем картинку, если она выйдет за пределы контейнера */
+  position: relative; /*  Относительное позиционирование для анимации */
+}
+
+#image-container img {
+  width: 100%; /* Исходная ширина картинки равна ширине контейнера */
+  height: 100%; /* Исходная высота картинки равна высоте контейнера */
+  object-fit: cover; /* Картинка масштабируется и обрезается, чтобы заполнить контейнер */
+  position: absolute; /* Абсолютное позиционирование внутри контейнера */
+  top: 0;
+  left: 0;
+  animation: zoomInOut 5s linear infinite; /* Анимация */
+}
+
+@keyframes zoomInOut {
+  0% {
+    transform: scale(1); /* Исходный масштаб */
+  }
+  50% {
+    transform: scale(1.2); /* Максимальный масштаб (увеличение на 20%) */
+  }
+  100% {
+    transform: scale(1); /* Возвращаемся к исходному масштабу */
+  }
+}
+
 </style>
 </head>
 <body>
   <div id="loadingi">Загрузка<span id="dots"></span></div>
+
+  <div id="image-container">
+    <img src="dasgreger.png">
+  </div>
 
   <script>
 
