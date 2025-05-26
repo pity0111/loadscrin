@@ -50,18 +50,18 @@ p {
   position: absolute; /* Абсолютное позиционирование внутри контейнера */
   top: 0;
   left: 0;
-  animation: zoomInOut 2s linear infinite; /* Анимация */
+  animation: zoomInOut 6s linear infinite; /* Анимация */
 }
 
 @keyframes zoomInOut {
   0% {
-    transform: scale(1); /* Исходный масштаб */
+    transform: scale(0.8); /* Исходный масштаб */
   }
   50% {
     transform: scale(1); /* Максимальный масштаб (увеличение на 20%) */
   }
   100% {
-    transform: scale(1); /* Возвращаемся к исходному масштабу */
+    transform: scale(0.8); /* Возвращаемся к исходному масштабу */
   }
 }
 
