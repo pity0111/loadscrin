@@ -36,21 +36,35 @@ p {
 }
 
 #image-container {
-  top: 34%;
-  left: 41%;
-  width: 350px; /*  Ширина контейнера (квадрат) */
-  height: 350px; /*  Высота контейнера (квадрат) */
-  position: absolute; /*  Относительное позиционирование для анимации */
-}
-
-#image-container img {
-  width: 100%; /* Исходная ширина картинки равна ширине контейнера */
-  height: 100%; /* Исходная высота картинки равна высоте контейнера */
-  object-fit: cover; /* Картинка масштабируется и обрезается, чтобы заполнить контейнер */
-  position: absolute; /* Абсолютное позиционирование внутри контейнера */
+  position: absolute;
+  width: 20vw; /* Используем viewport width для адаптивности */
+  height: 20vw; /* Сохраняем квадратную форму */
+  max-width: 300px; /* Ограничиваем максимальный размер */
+  max-height: 300px;
   top: 0;
   left: 0;
-  animation: zoomInOut 6s linear infinite; /* Анимация */
+  bottom: 0;
+  right: 0;
+  margin: auto;
+}
+@keyframes glowPulse {
+  0% {
+    filter: brightness(1) drop-shadow(0 0 1px rgba(118, 53, 202, 0.5));
+  }
+  100% {
+    filter: brightness(1.2) drop-shadow(0 0 14px rgba(159, 64, 221, 0.8));
+  }
+}
+#image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Сохраняем пропорции изображения */
+  position: absolute;
+  top: 0;
+  left: 0;
+  animation: 
+    zoomInOut 6s linear infinite,
+    glowPulse 3s ease-in-out infinite alternate; /* Новая анимация для свечения */
 }
 
 @keyframes zoomInOut {
@@ -71,7 +85,7 @@ p {
   <div id="loadingi">Загрузка<span id="dots"></span></div>
 
   <div id="image-container">
-    <img src="spirit_logo_5.png">
+    <img src="spirit_logo_5.png" class="center">
   </div>
 
   <script>
