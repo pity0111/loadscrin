@@ -6,8 +6,8 @@
 <style>
 
 @font-face {
-  font-family: 'vksans'; /* Имя, которое вы будете использовать в CSS */
-  src: url('fonts/vksansdisplay-demibold.woff') format('woff');
+  font-family: 'vksans';
+  src: url('fonts/silkscreen_rus.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
@@ -82,6 +82,7 @@ p {
 </style>
 </head>
 <body>
+  <div class="snow"></div>
   <div id="loadingi">Загрузка<span id="dots"></span></div>
 
   <div id="image-container">
@@ -109,6 +110,29 @@ p {
 	<script src="sleek.js"></script>
 	<script src="lib/jquery-2.1.1.min.js"></script>
 	<script src="lib/jquery.backstretch.min.js"></script>
+
+<script>
+function createSnowflakes() {
+    const snowContainer = document.querySelector('.snow');
+    const snowCount = 30; // количество снежинок
+
+    for (let i = 0; i < snowCount; i++) {
+        let snowflake = document.createElement('div');
+        snowflake.classList.add('snowflake');
+        snowflake.textContent = '❄';
+
+        snowflake.style.left = Math.random() * 100 + 'vw';
+        snowflake.style.animationDuration = 3 + Math.random() * 5 + 's';
+        snowflake.style.fontSize = 10 + Math.random() * 20 + 'px';
+        snowflake.style.animationDelay = Math.random() * 5 + 's';
+
+        snowContainer.appendChild(snowflake);
+    }
+}
+
+setInterval(createSnowflakes, 1000);
+</script>
+
 
 </body>
 </html>
