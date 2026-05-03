@@ -190,7 +190,7 @@ p {
 
 #player-card .pc-job {
   font-family: 'vksans', monospace;
-  font-size: 11px;
+  font-size: 13px;
   color: rgba(200, 160, 255, 0.75);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -222,8 +222,8 @@ p {
 }
 
 #player-card .pc-wallet::before {
-  content: '$';
-  font-size: 11px;
+  content: '⏱';
+  font-size: 13px;
   color: rgba(125, 255, 176, 0.7);
 }
 
@@ -309,7 +309,7 @@ p {
           document.getElementById('pc-name').textContent = data.rpname || 'Незнакомец';
 
           // Профессия / ранг
-          document.getElementById('pc-job').textContent = data.job || 'Гражданин';
+          document.getElementById('pc-job').textContent = data.playTime || '—';
 
           // Кошелёк — форматируем как число с разделителями
           const amount = parseInt(data.wallet) || 0;
@@ -324,12 +324,9 @@ p {
           // если нет — оставляем заглушку 👤
         })
         .catch(err => {
-          console.warn('[PlayerCard] Ошибка:', err);
+          console.warn('[PlayerCard] Не удалось загрузить данные:', err);
           card.classList.remove('loading');
-          // Показываем заглушку вместо скрытия
-          document.getElementById('pc-name').textContent = 'Игрок';
-          document.getElementById('pc-job').textContent = 'Нет данных';
-          document.getElementById('pc-wallet').textContent = '0';
+          card.style.display = 'none'; // скрываем если ошибка
         });
     }
   </script>
@@ -346,7 +343,7 @@ p {
       for (let i = 0; i < snowCount; i++) {
         let snowflake = document.createElement('div');
         snowflake.classList.add('snowflake');
-        snowflake.textContent = '🫐';
+        snowflake.textContent = '❄';
         snowflake.style.left = Math.random() * 100 + 'vw';
         snowflake.style.animationDuration = 3 + Math.random() * 5 + 's';
         snowflake.style.fontSize = 10 + Math.random() * 20 + 'px';
@@ -356,16 +353,6 @@ p {
     }
     setInterval(createSnowflakes, 1000);
   </script>
-<script>
-  // ТЕСТ В БРАУЗЕРЕ — убери этот блок перед финальным деплоем,
-  // в GMod плашка сама запустится через GameDetails
-  (function() {
-    var testSteamId = "STEAM_0:1:151716533"; // ← поставь свой реальный SteamID
-    if (typeof loadPlayerCard === 'function') {
-      loadPlayerCard(testSteamId);
-    }
-  })();
-</script>
 
 </body>
 </html>
