@@ -82,179 +82,203 @@ p {
   top: 20px;
   right: 20px;
   z-index: 1000;
+  display: none;
+  flex-direction: column;
+  gap: 0;
+  width: 300px;
 
-  display: none; /* скрыта до загрузки данных */
-  align-items: center;
-  gap: 14px;
-
-  background: linear-gradient(135deg,
-    rgba(10, 5, 25, 0.82) 0%,
-    rgba(30, 10, 60, 0.78) 100%
+  background: linear-gradient(150deg,
+    rgba(8, 3, 22, 0.88) 0%,
+    rgba(25, 8, 55, 0.84) 100%
   );
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-
-  border: 1px solid rgba(159, 64, 221, 0.45);
-  border-radius: 14px;
-  padding: 12px 18px 12px 12px;
-
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(159, 64, 221, 0.5);
+  border-radius: 16px;
+  overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(0,0,0,0.4),
-    0 4px 24px rgba(0,0,0,0.55),
-    0 0 20px rgba(120, 40, 200, 0.18),
-    inset 0 1px 0 rgba(255,255,255,0.06);
-
-  animation: cardAppear 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-  min-width: 220px;
-  max-width: 300px;
+    0 0 0 1px rgba(0,0,0,0.5),
+    0 8px 32px rgba(0,0,0,0.6),
+    0 0 30px rgba(100, 30, 180, 0.2),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+  animation: cardAppear 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes cardAppear {
-  from {
-    opacity: 0;
-    transform: translateX(30px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
+  from { opacity: 0; transform: translateX(40px) scale(0.94); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
 }
 
-/* Аватарка */
+/* ── Верхняя секция: аватар + ник + ранг ── */
+#player-card .pc-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px 14px 16px;
+  background: rgba(255,255,255,0.03);
+}
+
 #player-card .pc-avatar {
   position: relative;
   flex-shrink: 0;
 }
-
-#player-card .pc-avatar img {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  object-fit: cover;
-  display: block;
-  border: 2px solid rgba(159, 64, 221, 0.6);
-  box-shadow: 0 0 12px rgba(159, 64, 221, 0.4);
-}
-
-/* Заглушка если нет аватарки */
+#player-card .pc-avatar img,
 #player-card .pc-avatar-placeholder {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2a0a4a, #4a1a7a);
-  border: 2px solid rgba(159, 64, 221, 0.6);
+  width: 68px;
+  height: 68px;
+  border-radius: 12px;
+  object-fit: cover;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 26px;
-  color: rgba(255,255,255,0.5);
+  border: 2px solid rgba(159, 64, 221, 0.65);
+  box-shadow: 0 0 16px rgba(159, 64, 221, 0.4);
 }
-
-/* Онлайн-индикатор */
+#player-card .pc-avatar-placeholder {
+  background: linear-gradient(135deg, #1e0840, #3d1270);
+  font-size: 30px;
+}
 #player-card .pc-online-dot {
   position: absolute;
-  bottom: -3px;
-  right: -3px;
-  width: 12px;
-  height: 12px;
+  bottom: -3px; right: -3px;
+  width: 13px; height: 13px;
   background: #4cde6f;
   border-radius: 50%;
-  border: 2px solid rgba(10, 5, 25, 0.9);
-  box-shadow: 0 0 6px rgba(76, 222, 111, 0.7);
-  animation: pulse-dot 2s ease-in-out infinite;
+  border: 2px solid rgba(8, 3, 22, 0.95);
+  box-shadow: 0 0 8px rgba(76, 222, 111, 0.8);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+@keyframes pulseDot {
+  0%,100% { box-shadow: 0 0 6px rgba(76,222,111,0.7); }
+  50%      { box-shadow: 0 0 14px rgba(76,222,111,1);  }
 }
 
-@keyframes pulse-dot {
-  0%, 100% { box-shadow: 0 0 6px rgba(76, 222, 111, 0.7); }
-  50%       { box-shadow: 0 0 12px rgba(76, 222, 111, 1); }
-}
-
-/* Текстовый блок */
-#player-card .pc-info {
+#player-card .pc-identity {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   overflow: hidden;
+  flex: 1;
 }
-
 #player-card .pc-name {
   font-family: 'vksans', monospace;
-  font-size: 15px;
-  color: #e8d5ff;
-  text-shadow: 0 0 10px rgba(159, 64, 221, 0.6);
+  font-size: 16px;
+  color: #eedeff;
+  text-shadow: 0 0 12px rgba(180, 100, 255, 0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
 }
-
-#player-card .pc-job {
-  font-family: 'vksans', monospace;
-  font-size: 13px;
-  color: rgba(200, 160, 255, 0.75);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 180px;
-}
-
-#player-card .pc-divider {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(90deg,
-    transparent,
-    rgba(159, 64, 221, 0.4),
-    transparent
-  );
-  margin: 2px 0;
-}
-
-#player-card .pc-wallet {
-  display: flex;
+#player-card .pc-rank {
+  display: inline-flex;
   align-items: center;
   gap: 5px;
   font-family: 'vksans', monospace;
-  font-size: 13px;
+  font-size: 11px;
+  color: #c084fc;
+  background: rgba(159, 64, 221, 0.18);
+  border: 1px solid rgba(159, 64, 221, 0.35);
+  border-radius: 6px;
+  padding: 2px 8px;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#player-card .pc-rank::before {
+  content: '★';
+  font-size: 9px;
+  color: #a855f7;
+}
+
+/* ── Нижняя секция: деньги + время ── */
+#player-card .pc-stats {
+  display: flex;
+  align-items: stretch;
+}
+#player-card .pc-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 10px;
+}
+#player-card .pc-stat:first-child {
+  border-right: 1px solid rgba(159, 64, 221, 0.2);
+}
+#player-card .pc-stat-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+#player-card .pc-stat-label {
+  font-family: 'vksans', monospace;
+  font-size: 9px;
+  color: rgba(200,160,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+#player-card .pc-stat-value {
+  font-family: 'vksans', monospace;
+  font-size: 15px;
+  font-weight: bold;
   color: #7dffb0;
-  text-shadow: 0 0 8px rgba(100, 255, 150, 0.5);
+  text-shadow: 0 0 10px rgba(100, 255, 150, 0.5);
+}
+#player-card .pc-stat:last-child .pc-stat-value {
+  color: #93c5fd;
+  text-shadow: 0 0 10px rgba(100, 180, 255, 0.5);
 }
 
-#player-card .pc-wallet::before {
-  content: '⏱';
-  font-size: 13px;
-  color: rgba(125, 255, 176, 0.7);
-}
-
-/* Shimmer пока грузится */
+/* ── Шиммер при загрузке ── */
 #player-card.loading .pc-name,
-#player-card.loading .pc-job,
-#player-card.loading .pc-wallet {
+#player-card.loading .pc-rank,
+#player-card.loading .pc-stat-value {
   background: linear-gradient(90deg,
-    rgba(255,255,255,0.06) 25%,
-    rgba(255,255,255,0.15) 50%,
-    rgba(255,255,255,0.06) 75%
-  );
+    rgba(255,255,255,0.05) 25%,
+    rgba(255,255,255,0.14) 50%,
+    rgba(255,255,255,0.05) 75%);
   background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  animation: shimmer 1.4s infinite;
   border-radius: 4px;
-  color: transparent;
-  text-shadow: none;
-  min-width: 80px;
-  min-height: 14px;
-  display: block;
+  color: transparent !important;
+  text-shadow: none !important;
+  min-width: 60px; min-height: 12px;
 }
-
 @keyframes shimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
+/* ── Плавающие кубы (вместо снежинок) ── */
+.cube-wrap {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  perspective: 300px;
+}
+.pixel-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+.cube-face {
+  position: absolute;
+  width: 100%; height: 100%;
+}
+.cube-face.front  { background: rgba(120, 40, 200, 0.55); transform: translateZ(calc(var(--s)/2)); }
+.cube-face.back   { background: rgba(80,  20, 150, 0.55); transform: rotateY(180deg) translateZ(calc(var(--s)/2)); }
+.cube-face.left   { background: rgba(60,  10, 120, 0.55); transform: rotateY(-90deg) translateZ(calc(var(--s)/2)); }
+.cube-face.right  { background: rgba(90,  30, 170, 0.55); transform: rotateY( 90deg) translateZ(calc(var(--s)/2)); }
+.cube-face.top    { background: rgba(180, 80, 255, 0.55); transform: rotateX( 90deg) translateZ(calc(var(--s)/2)); }
+.cube-face.bottom { background: rgba(50,  10, 100, 0.55); transform: rotateX(-90deg) translateZ(calc(var(--s)/2)); }
+
+
 </style>
 </head>
 <body>
-  <div class="snow"></div>
   <div id="loadingi">Загрузка<span id="dots"></span></div>
 
   <div id="image-container">
@@ -263,15 +287,27 @@ p {
 
   <!-- ═══ ПЛАШКА ИГРОКА ═══ -->
   <div id="player-card">
-    <div class="pc-avatar">
-      <div class="pc-avatar-placeholder" id="pc-avatar-wrap">👤</div>
-      <div class="pc-online-dot"></div>
+    <div class="pc-top">
+      <div class="pc-avatar">
+        <div class="pc-avatar-placeholder" id="pc-avatar-wrap">👤</div>
+        <div class="pc-online-dot"></div>
+      </div>
+      <div class="pc-identity">
+        <div class="pc-name" id="pc-name">—</div>
+        <div class="pc-rank" id="pc-rank">Игрок</div>
+      </div>
     </div>
-    <div class="pc-info">
-      <div class="pc-name" id="pc-name">—</div>
-      <div class="pc-job" id="pc-job">—</div>
-      <div class="pc-divider"></div>
-      <div class="pc-wallet" id="pc-wallet">0</div>
+    <div class="pc-stats">
+      <div class="pc-stat">
+        <span class="pc-stat-icon">💰</span>
+        <span class="pc-stat-label">Деньги</span>
+        <span class="pc-stat-value" id="pc-wallet">0</span>
+      </div>
+      <div class="pc-stat">
+        <span class="pc-stat-icon">⏱</span>
+        <span class="pc-stat-label">Наигранно</span>
+        <span class="pc-stat-value" id="pc-job">—</span>
+      </div>
     </div>
   </div>
 
@@ -286,6 +322,14 @@ p {
       dotCount = (dotCount + 1) % 4;
     }
     setInterval(animateDots, 1000);
+
+    // ── Форматирование денег: 10000→10к, 2005000→2млн ─────────────────────
+    function formatMoney(n) {
+      n = parseInt(n) || 0;
+      if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'млн';
+      if (n >= 1000)    return (n / 1000).toFixed(1).replace(/\.0$/, '')    + 'к';
+      return String(n);
+    }
 
     // ── Загрузка плашки игрока (XMLHttpRequest — совместим с GMod) ──────────
     function loadPlayerCard(steamid) {
@@ -307,9 +351,9 @@ p {
           try {
             var data = JSON.parse(xhr.responseText);
             document.getElementById('pc-name').textContent   = data.rpname   || 'Незнакомец';
+            document.getElementById('pc-rank').textContent   = data.rank     || 'Игрок';
             document.getElementById('pc-job').textContent    = data.playTime || '—';
-            var amount = parseInt(data.wallet) || 0;
-            document.getElementById('pc-wallet').textContent = amount.toLocaleString('ru-RU');
+            document.getElementById('pc-wallet').textContent = formatMoney(data.wallet);
             if (data.avatar) {
               var avatarWrap = document.getElementById('pc-avatar-wrap');
               avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
@@ -330,7 +374,6 @@ p {
 
       xhr.send();
     }
-
     // ── Ждём steamid от GameDetails (опрос каждые 300мс, до 15 секунд) ──────
     var _cardLoaded = false;
     var _pollCount  = 0;
@@ -351,6 +394,159 @@ p {
   <script src="lib/jquery-2.1.1.min.js"></script>
   <script src="lib/jquery.backstretch.min.js"></script>
   <script src="sleek.js"></script>
+
+  <script>
+// ── 3D Плавающие фигуры ────────────────────────────────────────────────────
+(function() {
+  var MAX = 12;
+  var shapes = []; // { el, x, y, vx, vy, rx, ry, rz, vrx, vry, vrz, life, maxLife, phase }
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function randSign() { return Math.random() < 0.5 ? 1 : -1; }
+
+  function buildCube(size) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'width:'+size+'px;height:'+size+'px;position:relative;transform-style:preserve-3d;';
+    var half = size / 2;
+    var colors = [
+      'rgba(140,50,230,0.62)','rgba(90,20,160,0.62)',
+      'rgba(70,15,130,0.62)','rgba(110,35,200,0.62)',
+      'rgba(190,100,255,0.62)','rgba(50,10,100,0.62)'
+    ];
+    var tforms = [
+      'translateZ('+half+'px)',
+      'rotateY(180deg) translateZ('+half+'px)',
+      'rotateY(-90deg) translateZ('+half+'px)',
+      'rotateY(90deg)  translateZ('+half+'px)',
+      'rotateX(90deg)  translateZ('+half+'px)',
+      'rotateX(-90deg) translateZ('+half+'px)'
+    ];
+    tforms.forEach(function(t, i) {
+      var f = document.createElement('div');
+      f.style.cssText = 'position:absolute;width:'+size+'px;height:'+size+'px;background:'+colors[i]+';border:1px solid rgba(210,130,255,0.45);transform:'+t+';box-shadow:inset 0 0 8px rgba(200,100,255,0.3);';
+      wrap.appendChild(f);
+    });
+    return wrap;
+  }
+
+  function buildDiamond(size) {
+    var el = document.createElement('div');
+    el.style.cssText = 'width:'+size+'px;height:'+size+'px;background:rgba(120,40,210,0.58);border:1px solid rgba(200,130,255,0.5);border-radius:4px;box-shadow:0 0 14px rgba(160,80,255,0.45);transform-style:preserve-3d;';
+    return el;
+  }
+
+  function buildTriangle(size) {
+    var el = document.createElement('div');
+    el.style.cssText = 'width:0;height:0;border-left:'+(size/2)+'px solid transparent;border-right:'+(size/2)+'px solid transparent;border-bottom:'+size+'px solid rgba(130,50,220,0.68);filter:drop-shadow(0 0 7px rgba(160,80,255,0.55));';
+    return el;
+  }
+
+  function spawnOne() {
+    var size  = rand(14, 26);
+    var type  = ['cube','diamond','triangle'][Math.floor(Math.random()*3)];
+
+    // Обёртка — абсолютное позиционирование, не тронет поток
+    var outer = document.createElement('div');
+    outer.style.cssText = 'position:fixed;pointer-events:none;z-index:9997;opacity:0;will-change:transform,opacity;perspective:400px;';
+
+    var inner = type === 'cube'     ? buildCube(size)
+              : type === 'diamond'  ? buildDiamond(size)
+              :                       buildTriangle(size);
+
+    outer.appendChild(inner);
+    document.body.appendChild(outer);
+
+    var obj = {
+      el:   outer,
+      // Позиция в пикселях
+      x:    rand(0.05, 0.92) * window.innerWidth,
+      y:    rand(0.05, 0.88) * window.innerHeight,
+      // Скорость дрейфа (px/frame ~60fps)
+      vx:   rand(0.12, 0.38) * randSign(),
+      vy:   rand(0.10, 0.32) * randSign(),
+      // Углы вращения
+      rx: rand(0, 360), ry: rand(0, 360), rz: rand(0, 360),
+      // Скорость вращения (deg/frame)
+      vrx: rand(0.15, 0.55) * randSign(),
+      vry: rand(0.15, 0.55) * randSign(),
+      vrz: rand(0.08, 0.30) * randSign(),
+      // Жизнь: фреймы
+      life: 0,
+      maxLife: Math.round(rand(200, 420)), // ~3–7 сек при 60fps
+      phase: 'fadein', // fadein | live | fadeout
+      size: size
+    };
+
+    shapes.push(obj);
+  }
+
+  function tick() {
+    requestAnimationFrame(tick);
+
+    // Спавним если мало
+    if (shapes.length < MAX && Math.random() < 0.025) spawnOne();
+
+    var dead = [];
+
+    shapes.forEach(function(o, idx) {
+      o.life++;
+
+      // Фазы opacity
+      var fadeFrames = 40; // ~0.67 сек
+      var opacity;
+      if (o.life < fadeFrames) {
+        opacity = o.life / fadeFrames;
+      } else if (o.life >= o.maxLife - fadeFrames) {
+        opacity = (o.maxLife - o.life) / fadeFrames;
+      } else {
+        opacity = 1;
+      }
+
+      if (o.life >= o.maxLife) {
+        dead.push(idx);
+        if (o.el.parentNode) o.el.parentNode.removeChild(o.el);
+        return;
+      }
+
+      // Движение
+      o.x  += o.vx;
+      o.y  += o.vy;
+      // Лёгкое притяжение обратно к центру экрана (не улетает за край)
+      o.vx += (window.innerWidth  * 0.5 - o.x) * 0.0002;
+      o.vy += (window.innerHeight * 0.5 - o.y) * 0.0002;
+      // Небольшое случайное блуждание
+      o.vx += (Math.random() - 0.5) * 0.04;
+      o.vy += (Math.random() - 0.5) * 0.04;
+      // Ограничение скорости
+      var maxV = 0.5;
+      if (o.vx >  maxV) o.vx =  maxV;
+      if (o.vx < -maxV) o.vx = -maxV;
+      if (o.vy >  maxV) o.vy =  maxV;
+      if (o.vy < -maxV) o.vy = -maxV;
+
+      // Вращение
+      o.rx += o.vrx;
+      o.ry += o.vry;
+      o.rz += o.vrz;
+
+      o.el.style.opacity   = Math.max(0, Math.min(1, opacity)).toFixed(3);
+      o.el.style.transform = 'translate('+o.x.toFixed(1)+'px,'+o.y.toFixed(1)+'px)';
+      o.el.firstChild.style.transform =
+        'rotateX('+o.rx.toFixed(1)+'deg) rotateY('+o.ry.toFixed(1)+'deg) rotateZ('+o.rz.toFixed(1)+'deg)';
+    });
+
+    // Удаляем мёртвые (с конца чтобы не сбить индексы)
+    for (var i = dead.length - 1; i >= 0; i--) shapes.splice(dead[i], 1);
+  }
+
+  // Запускаем первые фигуры по одной с задержкой
+  for (var i = 0; i < MAX; i++) {
+    (function(delay){ setTimeout(spawnOne, delay); })(i * rand(300, 700));
+  }
+
+  tick();
+})();
+</script>
 
 </body>
 </html>

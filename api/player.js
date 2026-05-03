@@ -1,8 +1,5 @@
 import mysql from "mysql2/promise";
 
-/**
- * Конвертирует STEAM_0:X:Y → SteamID64
- */
 function toSteamID64(steamid) {
   if (/^\d{17}$/.test(steamid)) return steamid;
   const match = steamid.match(/^STEAM_\d:(\d):(\d+)$/i);
@@ -12,10 +9,6 @@ function toSteamID64(steamid) {
   return (BigInt("76561197960265728") + authid * BigInt(2) + authserver).toString();
 }
 
-/**
- * Конвертирует SteamID64 → STEAM_0:X:Y
- * (нужно для поиска в sam_players)
- */
 function toSteamID(steamid64) {
   const big  = BigInt(steamid64) - BigInt("76561197960265728");
   const auth = big % BigInt(2);
@@ -26,13 +19,10 @@ function toSteamID(steamid64) {
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { steamid } = req.query;
-  if (!steamid) {
-    return res.status(400).json({ error: "Параметр steamid обязателен" });
-  }
+  if (!steamid) return res.status(400).json({ error: "Параметр steamid обязателен" });
 
   let steamid64, steamidOld;
   try {
@@ -45,46 +35,40 @@ export default async function handler(req, res) {
   let db;
   try {
     db = await mysql.createConnection({
-      host:     process.env.DB_HOST     || "92.53.90.39",
-      user:     process.env.DB_USER     || "gameserver33368",
-      password: process.env.DB_PASSWORD || "2pL00hVr",
-      database: process.env.DB_NAME     || "gameserver33368",
+      host:           process.env.DB_HOST     || "92.53.90.39",
+      user:           process.env.DB_USER     || "gameserver33368",
+      password:       process.env.DB_PASSWORD || "2pL00hVr",
+      database:       process.env.DB_NAME     || "gameserver33368",
       connectTimeout: 8000,
     });
   } catch (e) {
-    console.error("DB connect error:", e.message);
     return res.status(500).json({ error: "Ошибка подключения к БД: " + e.message });
   }
 
   try {
-    // Таблица 1: darkrp_player (деньги, имя на сервере)
     const [drpRows] = await db.execute(
       `SELECT CAST(uid AS CHAR) AS uid, wallet, rpname
-       FROM darkrp_player
-       WHERE uid = ?
-       LIMIT 1`,
+       FROM darkrp_player WHERE uid = ? LIMIT 1`,
       [steamid64]
     );
 
-    // Таблица 2: sam_players (наигранное время)
+    // rank добавлен в запрос
     const [samRows] = await db.execute(
-      `SELECT play_time
-       FROM sam_players
-       WHERE steamid = ?
-       LIMIT 1`,
+      `SELECT play_time, rank
+       FROM sam_players WHERE steamid = ? LIMIT 1`,
       [steamidOld]
     );
 
     await db.end();
 
     if (drpRows.length === 0 && samRows.length === 0) {
-      return res.status(404).json({ error: "Игрок не найден в базе данных" });
+      return res.status(404).json({ error: "Игрок не найден" });
     }
 
     const drp = drpRows[0] || {};
     const sam = samRows[0] || {};
 
-    // Форматируем наигранное время (секунды → ч/мин)
+    // Время: секунды → "Xч Yм"
     let playTimeFormatted = "—";
     if (sam.play_time) {
       const totalMinutes = Math.floor(sam.play_time / 60);
@@ -93,7 +77,7 @@ export default async function handler(req, res) {
       playTimeFormatted  = hours > 0 ? `${hours}ч ${minutes}м` : `${minutes}м`;
     }
 
-    // Steam API — аватарка
+    // Steam аватарка
     let avatar = null;
     const steamKey = process.env.STEAM_API_KEY;
     if (steamKey) {
@@ -102,20 +86,20 @@ export default async function handler(req, res) {
           `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamKey}&steamids=${steamid64}`
         );
         const d = await r.json();
-        avatar  = d?.response?.players?.[0]?.avatarmedium ?? null;
+        avatar = d?.response?.players?.[0]?.avatarmedium ?? null;
       } catch (_) {}
     }
 
     return res.status(200).json({
       steamid64,
-      rpname:   drp.rpname ?? "Незнакомец",
-      wallet:   drp.wallet  ?? 0,
+      rpname:   drp.rpname   ?? "Незнакомец",
+      wallet:   drp.wallet   ?? 0,
       playTime: playTimeFormatted,
+      rank:     sam.rank     ?? "Игрок",
       avatar,
     });
 
   } catch (e) {
-    console.error("Query error:", e.message);
     await db.end?.();
     return res.status(500).json({ error: "Ошибка запроса: " + e.message });
   }
