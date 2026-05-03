@@ -1,3 +1,26 @@
+// ── Дефолты конфига (если config.js не подключён) ────────────────────────────
+if (typeof l_serverName      === 'undefined') var l_serverName      = '';
+if (typeof l_serverImage     === 'undefined') var l_serverImage     = '';
+if (typeof l_bgImages        === 'undefined') var l_bgImages        = ['fon.png'];
+if (typeof l_bgImagesRandom  === 'undefined') var l_bgImagesRandom  = false;
+if (typeof l_bgImageDuration === 'undefined') var l_bgImageDuration = 5000;
+if (typeof l_bgImageFadeVelocity==='undefined') var l_bgImageFadeVelocity = 1000;
+if (typeof l_bgVideo         === 'undefined') var l_bgVideo         = false;
+if (typeof l_background      === 'undefined') var l_background      = '';
+if (typeof l_bgOverlay       === 'undefined') var l_bgOverlay       = false;
+if (typeof l_bgDarkening     === 'undefined') var l_bgDarkening     = 30;
+if (typeof l_music           === 'undefined') var l_music           = false;
+if (typeof l_musicVolume     === 'undefined') var l_musicVolume     = 50;
+if (typeof l_musicRandom     === 'undefined') var l_musicRandom     = false;
+if (typeof l_musicDisplay    === 'undefined') var l_musicDisplay    = false;
+if (typeof l_musicPlaylist   === 'undefined') var l_musicPlaylist   = [];
+if (typeof l_messagesEnabled === 'undefined') var l_messagesEnabled = false;
+if (typeof l_messagesRandom  === 'undefined') var l_messagesRandom  = false;
+if (typeof l_messagesFade    === 'undefined') var l_messagesFade    = 500;
+if (typeof l_messagesDelay   === 'undefined') var l_messagesDelay   = 5000;
+if (typeof l_messages        === 'undefined') var l_messages        = [];
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Array randomizer (Fisher-Yates algorithm)
 function shuffle(array) {
   var currentIndex = array.length, temporaryValue, randomIndex;
