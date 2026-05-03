@@ -352,24 +352,5 @@ p {
   <script src="lib/jquery.backstretch.min.js"></script>
   <script src="sleek.js"></script>
 
-  <script>
-    // Снежинки
-    function createSnowflakes() {
-      const snowContainer = document.querySelector('.snow');
-      const snowCount = 30;
-      for (let i = 0; i < snowCount; i++) {
-        let snowflake = document.createElement('div');
-        snowflake.classList.add('snowflake');
-        snowflake.textContent = '❄';
-        snowflake.style.left = Math.random() * 100 + 'vw';
-        snowflake.style.animationDuration = 3 + Math.random() * 5 + 's';
-        snowflake.style.fontSize = 10 + Math.random() * 20 + 'px';
-        snowflake.style.animationDelay = Math.random() * 5 + 's';
-        snowContainer.appendChild(snowflake);
-      }
-    }
-    setInterval(createSnowflakes, 1000);
-  </script>
-
 </body>
 </html>
