@@ -1,25 +1,25 @@
 // Array randomizer (Fisher-Yates algorithm)
 function shuffle(array) {
   var currentIndex = array.length, temporaryValue, randomIndex;
-
   while (0 !== currentIndex) {
     randomIndex = Math.floor(Math.random() * currentIndex);
     currentIndex -= 1;
-
     temporaryValue = array[currentIndex];
     array[currentIndex] = array[randomIndex];
     array[randomIndex] = temporaryValue;
   }
-
   return array;
 }
 
 var neededFiles;
 var downloadedFiles = 0;
 
+// Глобально сохраняем steamid — GameDetails может вызваться раньше чем загрузится страница
+var _pendingSteamId = null;
+
 /**
- * GameDetails вызывается движком GMod при загрузке.
- * steamid приходит в формате STEAM_0:X:Y — передаём его в плашку игрока.
+ * GameDetails вызывается движком GMod.
+ * steamid приходит в формате STEAM_0:X:Y
  */
 function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemode) {
   setGamemode(gamemode);
@@ -29,9 +29,12 @@ function GameDetails(servername, serverurl, mapname, maxplayers, steamid, gamemo
     setServerName(servername);
   }
 
-  // ── Загружаем плашку игрока ─────────────────────────────────────────────
-  if (steamid && typeof loadPlayerCard === 'function') {
-    loadPlayerCard(steamid);
+  if (steamid) {
+    _pendingSteamId = steamid;
+    // Если страница уже готова — вызываем сразу, иначе DOMContentLoaded подхватит
+    if (typeof loadPlayerCard === 'function') {
+      loadPlayerCard(steamid);
+    }
   }
 }
 
@@ -48,7 +51,6 @@ function SetStatusChanged(status) {
   } else if (status == "Sending Client Info") {
     setProgress(100);
   }
-
   setStatus(status);
 }
 
@@ -57,7 +59,7 @@ function SetFilesNeeded(needed) {
 }
 
 function refreshProgress() {
-  progress = Math.floor(((downloadedFiles / neededFiles) * 100));
+  var progress = Math.floor(((downloadedFiles / neededFiles) * 100));
   setProgress(progress);
 }
 
@@ -90,22 +92,14 @@ var youtubePlayer;
 var actualMusic = -1;
 
 $(function () {
-  if (l_bgImagesRandom)
-    l_bgImages = shuffle(l_bgImages);
-
-  if (l_musicRandom)
-    l_musicPlaylist = shuffle(l_musicPlaylist);
-
-  if (l_messagesRandom)
-    l_messages = shuffle(l_messages);
-
-  if (l_messagesEnabled)
-    showMessage(0);
+  if (l_bgImagesRandom) l_bgImages = shuffle(l_bgImages);
+  if (l_musicRandom) l_musicPlaylist = shuffle(l_musicPlaylist);
+  if (l_messagesRandom) l_messages = shuffle(l_messages);
+  if (l_messagesEnabled) showMessage(0);
 
   if (l_music) {
     loadYoutube();
-    if (l_musicDisplay)
-      $("#music").fadeIn(2000);
+    if (l_musicDisplay) $("#music").fadeIn(2000);
   }
 
   if (l_bgVideo) {
@@ -114,15 +108,9 @@ $(function () {
     $.backstretch(l_bgImages, { duration: l_bgImageDuration, fade: l_bgImageFadeVelocity });
   }
 
-  if (l_serverName && !l_serverImage)
-    setServerName(l_serverName);
-
-  if (l_serverImage)
-    setServerName("<img src='" + l_serverImage + "'>");
-
-  if (l_bgOverlay)
-    $("#overlay").css("background-image", "url('images/overlay.png')");
-
+  if (l_serverName && !l_serverImage) setServerName(l_serverName);
+  if (l_serverImage) setServerName("<img src='" + l_serverImage + "'>");
+  if (l_bgOverlay) $("#overlay").css("background-image", "url('images/overlay.png')");
   $("#overlay").css("background-color", "rgba(0,0,0," + (l_bgDarkening / 100) + ")");
 });
 
@@ -135,12 +123,8 @@ function loadYoutube() {
 
 function onYouTubeIframeAPIReady() {
   youtubePlayer = new YT.Player('player', {
-    height: '390',
-    width: '640',
-    events: {
-      'onReady': onPlayerReady,
-      'onStateChange': onPlayerStateChange
-    }
+    height: '390', width: '640',
+    events: { 'onReady': onPlayerReady, 'onStateChange': onPlayerStateChange }
   });
 }
 
@@ -151,44 +135,28 @@ function onPlayerReady(event) {
 }
 
 function onPlayerStateChange(event) {
-  if (event.data == YT.PlayerState.ENDED) {
-    nextMusic();
-  }
+  if (event.data == YT.PlayerState.ENDED) nextMusic();
 }
 
 function nextMusic() {
   actualMusic++;
-
-  if (actualMusic >= l_musicPlaylist.length) {
-    actualMusic = 0;
-  }
-
+  if (actualMusic >= l_musicPlaylist.length) actualMusic = 0;
   var atual = l_musicPlaylist[actualMusic];
-
   if (atual.youtube) {
     youtubePlayer.loadVideoById(atual.youtube);
   } else {
     $("body").append('<audio src="' + atual.ogg + '" autoplay>');
     $("audio").prop('volume', l_musicVolume / 100);
-    $("audio").bind("ended", function () {
-      $(this).remove();
-      nextMusic();
-    });
+    $("audio").bind("ended", function () { $(this).remove(); nextMusic(); });
   }
-
   setMusicName(atual.name);
 }
 
 function showMessage(message) {
-  if (message >= l_messages.length)
-    message = 0;
-
+  if (message >= l_messages.length) message = 0;
   $("#messages").fadeOut(l_messagesFade, function () {
     $(this).html(l_messages[message]);
     $(this).fadeIn(l_messagesFade);
   });
-
-  setTimeout(function () {
-    showMessage(message + 1);
-  }, l_messagesDelay + l_messagesFade * 2);
+  setTimeout(function () { showMessage(message + 1); }, l_messagesDelay + l_messagesFade * 2);
 }

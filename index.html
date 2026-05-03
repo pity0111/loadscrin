@@ -286,49 +286,48 @@ p {
     setInterval(animateDots, 1000);
 
     // ── Загрузка данных игрока ──────────────────────────────────────────────
-    /**
-     * Вызывается из sleek.js → GameDetails (туда приходит steamid от GMod)
-     * Также можно вызвать вручную для теста: loadPlayerCard("STEAM_0:1:12345678")
-     */
     function loadPlayerCard(steamid) {
       if (!steamid) return;
 
-      const card = document.getElementById('player-card');
+      var card = document.getElementById('player-card');
       card.classList.add('loading');
       card.style.display = 'flex';
 
-      fetch(`https://loadscrin.vercel.app/api/player?steamid=${encodeURIComponent(steamid)}`)
-        .then(r => {
-          if (!r.ok) throw new Error("HTTP " + r.status);
+      fetch('https://loadscrin.vercel.app/api/player?steamid=' + encodeURIComponent(steamid))
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
           return r.json();
         })
-        .then(data => {
+        .then(function(data) {
           card.classList.remove('loading');
 
-          // Имя
           document.getElementById('pc-name').textContent = data.rpname || 'Незнакомец';
+          document.getElementById('pc-job').textContent  = data.playTime || '—';
 
-          // Профессия / ранг
-          document.getElementById('pc-job').textContent = data.playTime || '—';
+          var amount = parseInt(data.wallet) || 0;
+          document.getElementById('pc-wallet').textContent = amount.toLocaleString('ru-RU');
 
-          // Кошелёк — форматируем как число с разделителями
-          const amount = parseInt(data.wallet) || 0;
-          document.getElementById('pc-wallet').textContent =
-            amount.toLocaleString('ru-RU');
-
-          // Аватарка
-          const avatarWrap = document.getElementById('pc-avatar-wrap');
+          var avatarWrap = document.getElementById('pc-avatar-wrap');
           if (data.avatar) {
-            avatarWrap.innerHTML = `<img src="${data.avatar}" alt="avatar">`;
+            avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
           }
-          // если нет — оставляем заглушку 👤
         })
-        .catch(err => {
-          console.warn('[PlayerCard] Не удалось загрузить данные:', err);
+        .catch(function(err) {
+          console.warn('[PlayerCard] Ошибка:', err);
           card.classList.remove('loading');
-          card.style.display = 'none'; // скрываем если ошибка
+          // Показываем заглушку вместо скрытия
+          document.getElementById('pc-name').textContent  = 'Ошибка загрузки';
+          document.getElementById('pc-job').textContent   = '—';
+          document.getElementById('pc-wallet').textContent = '0';
         });
     }
+
+    // Если GameDetails уже вызвался до загрузки скриптов — подхватываем steamid
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof _pendingSteamId !== 'undefined' && _pendingSteamId) {
+        loadPlayerCard(_pendingSteamId);
+      }
+    });
   </script>
 
   <script src="sleek.js"></script>
