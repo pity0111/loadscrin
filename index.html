@@ -12,7 +12,7 @@
   font-style: normal;
 }
 .content {
-  background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный фон для контента */
+  background-color: rgba(0, 0, 0, 0.5);
   padding: 20px;
   border-radius: 10px;
 }
@@ -27,19 +27,18 @@ p {
 
 #loadingi {
   width: 100%;
-	position: absolute;
+  position: absolute;
   font-size: 50px;
   font-family: 'vksans';
   text-align: center;
   top: 88%;
-  /*margin-bottom: 20px;  Добавлен отступ снизу */
 }
 
 #image-container {
   position: absolute;
-  width: 20vw; /* Используем viewport width для адаптивности */
-  height: 20vw; /* Сохраняем квадратную форму */
-  max-width: 300px; /* Ограничиваем максимальный размер */
+  width: 20vw;
+  height: 20vw;
+  max-width: 300px;
   max-height: 300px;
   top: 0;
   left: 0;
@@ -47,6 +46,7 @@ p {
   right: 0;
   margin: auto;
 }
+
 @keyframes glowPulse {
   0% {
     filter: brightness(1) drop-shadow(0 0 1px rgba(118, 53, 202, 0.5));
@@ -55,28 +55,200 @@ p {
     filter: brightness(1.2) drop-shadow(0 0 14px rgba(159, 64, 221, 0.8));
   }
 }
+
 #image-container img {
   width: 100%;
   height: 100%;
-  object-fit: contain; /* Сохраняем пропорции изображения */
+  object-fit: contain;
   position: absolute;
   top: 0;
   left: 0;
-  animation: 
+  animation:
     zoomInOut 6s linear infinite,
-    glowPulse 3s ease-in-out infinite alternate; /* Новая анимация для свечения */
+    glowPulse 3s ease-in-out infinite alternate;
 }
 
 @keyframes zoomInOut {
-  0% {
-    transform: scale(0.85); /* Исходный масштаб */
+  0%   { transform: scale(0.85); }
+  50%  { transform: scale(1); }
+  100% { transform: scale(0.85); }
+}
+
+/* ═══════════════════════════════════════════════
+   ПЛАШКА ИГРОКА — правый верхний угол
+═══════════════════════════════════════════════ */
+#player-card {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+
+  display: none; /* скрыта до загрузки данных */
+  align-items: center;
+  gap: 14px;
+
+  background: linear-gradient(135deg,
+    rgba(10, 5, 25, 0.82) 0%,
+    rgba(30, 10, 60, 0.78) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(159, 64, 221, 0.45);
+  border-radius: 14px;
+  padding: 12px 18px 12px 12px;
+
+  box-shadow:
+    0 0 0 1px rgba(0,0,0,0.4),
+    0 4px 24px rgba(0,0,0,0.55),
+    0 0 20px rgba(120, 40, 200, 0.18),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+
+  animation: cardAppear 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  min-width: 220px;
+  max-width: 300px;
+}
+
+@keyframes cardAppear {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95);
   }
-  50% {
-    transform: scale(1); /* Максимальный масштаб (увеличение на 20%) */
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
-  100% {
-    transform: scale(0.85); /* Возвращаемся к исходному масштабу */
-  }
+}
+
+/* Аватарка */
+#player-card .pc-avatar {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#player-card .pc-avatar img {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+  border: 2px solid rgba(159, 64, 221, 0.6);
+  box-shadow: 0 0 12px rgba(159, 64, 221, 0.4);
+}
+
+/* Заглушка если нет аватарки */
+#player-card .pc-avatar-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #2a0a4a, #4a1a7a);
+  border: 2px solid rgba(159, 64, 221, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: rgba(255,255,255,0.5);
+}
+
+/* Онлайн-индикатор */
+#player-card .pc-online-dot {
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  background: #4cde6f;
+  border-radius: 50%;
+  border: 2px solid rgba(10, 5, 25, 0.9);
+  box-shadow: 0 0 6px rgba(76, 222, 111, 0.7);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 6px rgba(76, 222, 111, 0.7); }
+  50%       { box-shadow: 0 0 12px rgba(76, 222, 111, 1); }
+}
+
+/* Текстовый блок */
+#player-card .pc-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+#player-card .pc-name {
+  font-family: 'vksans', monospace;
+  font-size: 15px;
+  color: #e8d5ff;
+  text-shadow: 0 0 10px rgba(159, 64, 221, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+#player-card .pc-job {
+  font-family: 'vksans', monospace;
+  font-size: 11px;
+  color: rgba(200, 160, 255, 0.75);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+#player-card .pc-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent,
+    rgba(159, 64, 221, 0.4),
+    transparent
+  );
+  margin: 2px 0;
+}
+
+#player-card .pc-wallet {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'vksans', monospace;
+  font-size: 13px;
+  color: #7dffb0;
+  text-shadow: 0 0 8px rgba(100, 255, 150, 0.5);
+}
+
+#player-card .pc-wallet::before {
+  content: '$';
+  font-size: 11px;
+  color: rgba(125, 255, 176, 0.7);
+}
+
+/* Shimmer пока грузится */
+#player-card.loading .pc-name,
+#player-card.loading .pc-job,
+#player-card.loading .pc-wallet {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.06) 25%,
+    rgba(255,255,255,0.15) 50%,
+    rgba(255,255,255,0.06) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+  color: transparent;
+  text-shadow: none;
+  min-width: 80px;
+  min-height: 14px;
+  display: block;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 </style>
@@ -89,65 +261,98 @@ p {
     <img src="spirit_logo_5.png" class="center">
   </div>
 
+  <!-- ═══ ПЛАШКА ИГРОКА ═══ -->
+  <div id="player-card">
+    <div class="pc-avatar">
+      <div class="pc-avatar-placeholder" id="pc-avatar-wrap">👤</div>
+      <div class="pc-online-dot"></div>
+    </div>
+    <div class="pc-info">
+      <div class="pc-name" id="pc-name">—</div>
+      <div class="pc-job" id="pc-job">—</div>
+      <div class="pc-divider"></div>
+      <div class="pc-wallet" id="pc-wallet">0</div>
+    </div>
+  </div>
+
   <script>
-
-
+    // ── Анимация точек ──────────────────────────────────────────────────────
     const dotsElement = document.getElementById('dots');
     let dotCount = 0;
-
     function animateDots() {
-      let dots = '';
-      for (let i = 0; i < dotCount; i++) {
-        dots += '.';
-      }
-      dotsElement.textContent = dots;
-
+      dotsElement.textContent = '.'.repeat(dotCount);
       dotCount = (dotCount + 1) % 4;
     }
-
     setInterval(animateDots, 1000);
+
+    // ── Загрузка данных игрока ──────────────────────────────────────────────
+    /**
+     * Вызывается из sleek.js → GameDetails (туда приходит steamid от GMod)
+     * Также можно вызвать вручную для теста: loadPlayerCard("STEAM_0:1:12345678")
+     */
+    function loadPlayerCard(steamid) {
+      if (!steamid) return;
+
+      const card = document.getElementById('player-card');
+      card.classList.add('loading');
+      card.style.display = 'flex';
+
+      fetch(`https://your-project.vercel.app/api/player?steamid=${encodeURIComponent(steamid)}`)
+        .then(r => {
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(data => {
+          card.classList.remove('loading');
+
+          // Имя
+          document.getElementById('pc-name').textContent = data.rpname || 'Незнакомец';
+
+          // Профессия / ранг
+          document.getElementById('pc-job').textContent = data.job || 'Гражданин';
+
+          // Кошелёк — форматируем как число с разделителями
+          const amount = parseInt(data.wallet) || 0;
+          document.getElementById('pc-wallet').textContent =
+            amount.toLocaleString('ru-RU');
+
+          // Аватарка
+          const avatarWrap = document.getElementById('pc-avatar-wrap');
+          if (data.avatar) {
+            avatarWrap.innerHTML = `<img src="${data.avatar}" alt="avatar">`;
+          }
+          // если нет — оставляем заглушку 👤
+        })
+        .catch(err => {
+          console.warn('[PlayerCard] Не удалось загрузить данные:', err);
+          card.classList.remove('loading');
+          card.style.display = 'none'; // скрываем если ошибка
+        });
+    }
   </script>
-	<script src="sleek.js"></script>
-	<script src="lib/jquery-2.1.1.min.js"></script>
-	<script src="lib/jquery.backstretch.min.js"></script>
 
+  <script src="sleek.js"></script>
+  <script src="lib/jquery-2.1.1.min.js"></script>
+  <script src="lib/jquery.backstretch.min.js"></script>
 
-<script>
-fetch("https://your-project.vercel.app/api/top")
-  .then(r => r.json())
-  .then(data => {
-      console.log(data);
-
-      data.forEach((p, i) => {
-          document.body.innerHTML += `
-              <div>${i+1}. ${p.rpname} | $${p.wallet}</div>
-          `;
-      });
-  });
-</script>
-
-<script>
-function createSnowflakes() {
-    const snowContainer = document.querySelector('.snow');
-    const snowCount = 30; // количество снежинок
-
-    for (let i = 0; i < snowCount; i++) {
+  <script>
+    // Снежинки
+    function createSnowflakes() {
+      const snowContainer = document.querySelector('.snow');
+      const snowCount = 30;
+      for (let i = 0; i < snowCount; i++) {
         let snowflake = document.createElement('div');
         snowflake.classList.add('snowflake');
         snowflake.textContent = '❄';
-
         snowflake.style.left = Math.random() * 100 + 'vw';
         snowflake.style.animationDuration = 3 + Math.random() * 5 + 's';
         snowflake.style.fontSize = 10 + Math.random() * 20 + 'px';
         snowflake.style.animationDelay = Math.random() * 5 + 's';
-
         snowContainer.appendChild(snowflake);
+      }
     }
-}
-
-setInterval(createSnowflakes, 1000);
-</script>
-
+    setInterval(createSnowflakes, 1000);
+  </script>
 
 </body>
 </html>
