@@ -277,57 +277,75 @@ p {
 
   <script>
     // ── Анимация точек ──────────────────────────────────────────────────────
-    const dotsElement = document.getElementById('dots');
-    let dotCount = 0;
+    var dotsElement = document.getElementById('dots');
+    var dotCount = 0;
     function animateDots() {
-      dotsElement.textContent = '.'.repeat(dotCount);
+      var dots = '';
+      for (var i = 0; i < dotCount; i++) dots += '.';
+      dotsElement.textContent = dots;
       dotCount = (dotCount + 1) % 4;
     }
     setInterval(animateDots, 1000);
 
-    // ── Загрузка данных игрока ──────────────────────────────────────────────
+    // ── Загрузка плашки игрока (XMLHttpRequest — совместим с GMod) ──────────
     function loadPlayerCard(steamid) {
-      if (!steamid) return;
+      if (!steamid || steamid === '') return;
 
       var card = document.getElementById('player-card');
-      card.classList.add('loading');
       card.style.display = 'flex';
+      card.classList.add('loading');
 
-      fetch('https://loadscrin.vercel.app/api/player?steamid=' + encodeURIComponent(steamid))
-        .then(function(r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.json();
-        })
-        .then(function(data) {
-          card.classList.remove('loading');
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', 'https://loadscrin.vercel.app/api/player?steamid=' + encodeURIComponent(steamid), true);
+      xhr.timeout = 10000;
 
-          document.getElementById('pc-name').textContent = data.rpname || 'Незнакомец';
-          document.getElementById('pc-job').textContent  = data.playTime || '—';
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        card.classList.remove('loading');
 
-          var amount = parseInt(data.wallet) || 0;
-          document.getElementById('pc-wallet').textContent = amount.toLocaleString('ru-RU');
-
-          var avatarWrap = document.getElementById('pc-avatar-wrap');
-          if (data.avatar) {
-            avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
+        if (xhr.status === 200) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            document.getElementById('pc-name').textContent   = data.rpname   || 'Незнакомец';
+            document.getElementById('pc-job').textContent    = data.playTime || '—';
+            var amount = parseInt(data.wallet) || 0;
+            document.getElementById('pc-wallet').textContent = amount.toLocaleString('ru-RU');
+            if (data.avatar) {
+              var avatarWrap = document.getElementById('pc-avatar-wrap');
+              avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
+            }
+          } catch(e) {
+            document.getElementById('pc-name').textContent = 'Ошибка парсинга';
           }
-        })
-        .catch(function(err) {
-          console.warn('[PlayerCard] Ошибка:', err);
-          card.classList.remove('loading');
-          // Показываем заглушку вместо скрытия
-          document.getElementById('pc-name').textContent  = 'Ошибка загрузки';
-          document.getElementById('pc-job').textContent   = '—';
-          document.getElementById('pc-wallet').textContent = '0';
-        });
+        } else {
+          document.getElementById('pc-name').textContent = 'Нет данных';
+          document.getElementById('pc-job').textContent  = 'HTTP ' + xhr.status;
+        }
+      };
+
+      xhr.onerror = function() {
+        card.classList.remove('loading');
+        document.getElementById('pc-name').textContent = 'Нет соединения';
+      };
+
+      xhr.send();
     }
 
-    // Если GameDetails уже вызвался до загрузки скриптов — подхватываем steamid
-    document.addEventListener('DOMContentLoaded', function() {
+    // ── Ждём steamid от GameDetails (опрос каждые 300мс, до 15 секунд) ──────
+    var _cardLoaded = false;
+    var _pollCount  = 0;
+    var _pollTimer  = setInterval(function() {
+      _pollCount++;
+      if (_cardLoaded || _pollCount > 50) {
+        clearInterval(_pollTimer);
+        return;
+      }
       if (typeof _pendingSteamId !== 'undefined' && _pendingSteamId) {
+        _cardLoaded = true;
+        clearInterval(_pollTimer);
         loadPlayerCard(_pendingSteamId);
       }
-    });
+    }, 300);
   </script>
 
   <script src="sleek.js"></script>
