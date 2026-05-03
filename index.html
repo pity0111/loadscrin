@@ -111,6 +111,21 @@ p {
 	<script src="lib/jquery-2.1.1.min.js"></script>
 	<script src="lib/jquery.backstretch.min.js"></script>
 
+
+<script>
+fetch("https://your-project.vercel.app/api/top")
+  .then(r => r.json())
+  .then(data => {
+      console.log(data);
+
+      data.forEach((p, i) => {
+          document.body.innerHTML += `
+              <div>${i+1}. ${p.rpname} | $${p.wallet}</div>
+          `;
+      });
+  });
+</script>
+
 <script>
 function createSnowflakes() {
     const snowContainer = document.querySelector('.snow');
