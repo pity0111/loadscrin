@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { steamid } = req.query;
-  if (!steamid) return res.status(400).json({ error: "Параметр steamid обязателен" });
+  if (!steamid) return res.status(400).json({ error: "steamid обязателен" });
 
   let steamid64, steamidOld;
   try {
@@ -42,65 +42,80 @@ export default async function handler(req, res) {
       connectTimeout: 8000,
     });
   } catch (e) {
-    return res.status(500).json({ error: "Ошибка подключения к БД: " + e.message });
+    return res.status(500).json({ error: "DB_CONNECT: " + e.message });
   }
 
+  let drp = {}, sam = {};
+
+  // ── darkrp_player ──────────────────────────────────────────────────────────
   try {
-    const [drpRows] = await db.execute(
-      `SELECT CAST(uid AS CHAR) AS uid, wallet, rpname
-       FROM darkrp_player WHERE uid = ? LIMIT 1`,
+    const [rows] = await db.execute(
+      "SELECT CAST(uid AS CHAR) AS uid, wallet, rpname FROM darkrp_player WHERE uid = ? LIMIT 1",
       [steamid64]
     );
+    drp = rows[0] || {};
+  } catch (e) {
+    await db.end();
+    return res.status(500).json({ error: "DRP_QUERY: " + e.message });
+  }
 
-    // rank добавлен в запрос
-    const [samRows] = await db.execute(
-      `SELECT play_time, rank
-       FROM sam_players WHERE steamid = ? LIMIT 1`,
+  // ── sam_players: сначала пробуем с rank, если нет колонки — без неё ────────
+  let rank = "Игрок";
+  let playTimeRaw = 0;
+  try {
+    const [rows] = await db.execute(
+      "SELECT play_time, rank FROM sam_players WHERE steamid = ? LIMIT 1",
       [steamidOld]
     );
-
-    await db.end();
-
-    if (drpRows.length === 0 && samRows.length === 0) {
-      return res.status(404).json({ error: "Игрок не найден" });
+    if (rows[0]) {
+      playTimeRaw = rows[0].play_time || 0;
+      rank        = rows[0].rank      || "Игрок";
     }
-
-    const drp = drpRows[0] || {};
-    const sam = samRows[0] || {};
-
-    // Время: секунды → "Xч Yм"
-    let playTimeFormatted = "—";
-    if (sam.play_time) {
-      const totalMinutes = Math.floor(sam.play_time / 60);
-      const hours        = Math.floor(totalMinutes / 60);
-      const minutes      = totalMinutes % 60;
-      playTimeFormatted  = hours > 0 ? `${hours}ч ${minutes}м` : `${minutes}м`;
-    }
-
-    // Steam аватарка
-    let avatar = null;
-    const steamKey = process.env.STEAM_API_KEY;
-    if (steamKey) {
-      try {
-        const r = await fetch(
-          `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamKey}&steamids=${steamid64}`
-        );
-        const d = await r.json();
-        avatar = d?.response?.players?.[0]?.avatarmedium ?? null;
-      } catch (_) {}
-    }
-
-    return res.status(200).json({
-      steamid64,
-      rpname:   drp.rpname   ?? "Незнакомец",
-      wallet:   drp.wallet   ?? 0,
-      playTime: playTimeFormatted,
-      rank:     sam.rank     ?? "Игрок",
-      avatar,
-    });
-
   } catch (e) {
-    await db.end?.();
-    return res.status(500).json({ error: "Ошибка запроса: " + e.message });
+    // Возможно колонка rank называется иначе — пробуем без неё
+    try {
+      const [rows] = await db.execute(
+        "SELECT play_time FROM sam_players WHERE steamid = ? LIMIT 1",
+        [steamidOld]
+      );
+      if (rows[0]) playTimeRaw = rows[0].play_time || 0;
+      rank = "Игрок"; // колонки rank нет — оставляем дефолт
+    } catch (e2) {
+      // таблица sam_players недоступна — не критично, продолжаем
+    }
   }
+
+  await db.end();
+
+  // Форматируем время
+  let playTime = "—";
+  if (playTimeRaw) {
+    const totalMin = Math.floor(playTimeRaw / 60);
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    playTime = h > 0 ? `${h}ч ${m}м` : `${m}м`;
+  }
+
+  // Steam аватарка
+  let avatar = null;
+  const steamKey = process.env.STEAM_API_KEY;
+  if (steamKey) {
+    try {
+      const r = await fetch(
+        `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamKey}&steamids=${steamid64}`
+      );
+      const d = await r.json();
+      avatar = d?.response?.players?.[0]?.avatarmedium ?? null;
+    } catch (_) {}
+  }
+
+  return res.status(200).json({
+    steamid64,
+    steamidOld,
+    rpname:   drp.rpname ?? "Незнакомец",
+    wallet:   drp.wallet  ?? 0,
+    playTime,
+    rank,
+    avatar,
+  });
 }
