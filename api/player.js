@@ -109,7 +109,7 @@ export default async function handler(req, res) {
   // Вариант 2: может колонка называется `group` вместо rank
   try {
     const [rows] = await db.execute(
-      "SELECT play_time, `group` AS rank FROM sam_players WHERE steamid = ? LIMIT 1",
+      "SELECT play_time, `rank` AS rank FROM sam_players WHERE steamid = ? LIMIT 1",
       [steamidOld]
     );
     if (rows[0]) {
