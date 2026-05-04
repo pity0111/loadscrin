@@ -5,6 +5,12 @@
 <link rel="stylesheet" href="sleek.css">
 <style>
 
+/* Убираем фоновую картинку */
+body {
+  background-image: none !important;
+  background-color: #000 !important;
+}
+
 @font-face {
   font-family: 'vksans';
   src: url('fonts/silkscreen_rus.ttf') format('truetype');
@@ -48,12 +54,9 @@ p {
 }
 
 @keyframes glowPulse {
-  0% {
-    filter: brightness(1) drop-shadow(0 0 1px rgba(118, 53, 202, 0.5));
-  }
-  100% {
-    filter: brightness(1.2) drop-shadow(0 0 14px rgba(159, 64, 221, 0.8));
-  }
+  0%   { filter: brightness(0.95) drop-shadow(0 0 8px rgba(140,60,230,0.5)) drop-shadow(0 0 20px rgba(120,40,200,0.3)); }
+  50%  { filter: brightness(1.18) drop-shadow(0 0 26px rgba(190,90,255,0.95)) drop-shadow(0 0 55px rgba(150,55,230,0.6)) drop-shadow(0 0 80px rgba(110,30,190,0.35)); }
+  100% { filter: brightness(0.95) drop-shadow(0 0 8px rgba(140,60,230,0.5)) drop-shadow(0 0 20px rgba(120,40,200,0.3)); }
 }
 
 #image-container img {
@@ -64,8 +67,8 @@ p {
   top: 0;
   left: 0;
   animation:
-    zoomInOut 6s linear infinite,
-    glowPulse 3s ease-in-out infinite alternate;
+    zoomInOut 6s ease-in-out infinite,
+    glowPulse 3.5s ease-in-out infinite;
 }
 
 @keyframes zoomInOut {
@@ -323,7 +326,7 @@ p {
     }
     setInterval(animateDots, 1000);
 
-    // ── Форматирование денег: 10000→10к, 2005000→2млн ─────────────────────
+    // ── Форматирование денег ────────────────────────────────────────────────
     function formatMoney(n) {
       n = parseInt(n) || 0;
       if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'млн';
@@ -331,17 +334,18 @@ p {
       return String(n);
     }
 
-    // ── Загрузка плашки игрока (XMLHttpRequest — совместим с GMod) ──────────
-    function loadPlayerCard(steamid) {
+    // ── Загрузка плашки игрока (с retry при неудаче) ─────────────────────────
+    function loadPlayerCard(steamid, attempt) {
       if (!steamid || steamid === '') return;
+      attempt = attempt || 1;
 
       var card = document.getElementById('player-card');
       card.style.display = 'flex';
-      card.classList.add('loading');
+      if (attempt === 1) card.classList.add('loading');
 
       var xhr = new XMLHttpRequest();
       xhr.open('GET', 'https://loadscrin.vercel.app/api/player?steamid=' + encodeURIComponent(steamid), true);
-      xhr.timeout = 10000;
+      xhr.timeout = 12000;
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState !== 4) return;
@@ -351,25 +355,37 @@ p {
           try {
             var data = JSON.parse(xhr.responseText);
             document.getElementById('pc-name').textContent   = data.rpname   || 'Незнакомец';
-            document.getElementById('pc-rank').textContent   = data.rank     || 'Игрок';
-            document.getElementById('pc-job').textContent    = data.playTime || '—';
+            document.getElementById('pc-rank').textContent   = data.rank     || 'Юзер';
+            document.getElementById('pc-job').textContent    = data.playTime || '0 минут';
             document.getElementById('pc-wallet').textContent = formatMoney(data.wallet);
             if (data.avatar) {
               var avatarWrap = document.getElementById('pc-avatar-wrap');
               avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
             }
           } catch(e) {
-            document.getElementById('pc-name').textContent = 'Ошибка парсинга';
+            document.getElementById('pc-name').textContent = 'Ошибка';
           }
         } else {
-          document.getElementById('pc-name').textContent = 'Нет данных';
-          document.getElementById('pc-job').textContent  = 'HTTP ' + xhr.status;
+          // Retry до 3 раз с увеличивающейся задержкой
+          if (attempt < 3) {
+            setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, attempt * 2000);
+          } else {
+            document.getElementById('pc-name').textContent = 'Нет данных';
+          }
         }
       };
 
       xhr.onerror = function() {
         card.classList.remove('loading');
-        document.getElementById('pc-name').textContent = 'Нет соединения';
+        if (attempt < 3) {
+          setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, attempt * 2000);
+        }
+      };
+
+      xhr.ontimeout = function() {
+        if (attempt < 3) {
+          setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, 1000);
+        }
       };
 
       xhr.send();
@@ -398,8 +414,8 @@ p {
   <script>
 // ── 3D Плавающие фигуры ────────────────────────────────────────────────────
 (function() {
-  var MAX = 12;
-  var shapes = []; // { el, x, y, vx, vy, rx, ry, rz, vrx, vry, vrz, life, maxLife, phase }
+  var MAX = 28;
+  var shapes = [];
 
   function rand(a, b) { return a + Math.random() * (b - a); }
   function randSign() { return Math.random() < 0.5 ? 1 : -1; }
@@ -462,17 +478,17 @@ p {
       x:    rand(0.05, 0.92) * window.innerWidth,
       y:    rand(0.05, 0.88) * window.innerHeight,
       // Скорость дрейфа (px/frame ~60fps)
-      vx:   rand(0.12, 0.38) * randSign(),
-      vy:   rand(0.10, 0.32) * randSign(),
+      vx:   rand(0.02, 0.08) * randSign(),
+      vy:   rand(0.02, 0.08) * randSign(),
       // Углы вращения
       rx: rand(0, 360), ry: rand(0, 360), rz: rand(0, 360),
-      // Скорость вращения (deg/frame)
-      vrx: rand(0.15, 0.55) * randSign(),
-      vry: rand(0.15, 0.55) * randSign(),
-      vrz: rand(0.08, 0.30) * randSign(),
+      // Скорость вращения (deg/frame) — быстрее
+      vrx: rand(0.5, 1.8) * randSign(),
+      vry: rand(0.5, 1.8) * randSign(),
+      vrz: rand(0.3, 1.0) * randSign(),
       // Жизнь: фреймы
       life: 0,
-      maxLife: Math.round(rand(200, 420)), // ~3–7 сек при 60fps
+      maxLife: Math.round(rand(300, 600)), // ~5–10 сек при 60fps
       phase: 'fadein', // fadein | live | fadeout
       size: size
     };
@@ -484,7 +500,7 @@ p {
     requestAnimationFrame(tick);
 
     // Спавним если мало
-    if (shapes.length < MAX && Math.random() < 0.025) spawnOne();
+    if (shapes.length < MAX && Math.random() < 0.06) spawnOne();
 
     var dead = [];
 
@@ -512,13 +528,13 @@ p {
       o.x  += o.vx;
       o.y  += o.vy;
       // Лёгкое притяжение обратно к центру экрана (не улетает за край)
-      o.vx += (window.innerWidth  * 0.5 - o.x) * 0.0002;
-      o.vy += (window.innerHeight * 0.5 - o.y) * 0.0002;
+      o.vx += (window.innerWidth  * 0.5 - o.x) * 0.00015;
+      o.vy += (window.innerHeight * 0.5 - o.y) * 0.00015;
       // Небольшое случайное блуждание
-      o.vx += (Math.random() - 0.5) * 0.04;
-      o.vy += (Math.random() - 0.5) * 0.04;
+      o.vx += (Math.random() - 0.5) * 0.008;
+      o.vy += (Math.random() - 0.5) * 0.008;
       // Ограничение скорости
-      var maxV = 0.5;
+      var maxV = 0.12;
       if (o.vx >  maxV) o.vx =  maxV;
       if (o.vx < -maxV) o.vx = -maxV;
       if (o.vy >  maxV) o.vy =  maxV;
@@ -541,7 +557,7 @@ p {
 
   // Запускаем первые фигуры по одной с задержкой
   for (var i = 0; i < MAX; i++) {
-    (function(delay){ setTimeout(spawnOne, delay); })(i * rand(300, 700));
+    (function(delay){ setTimeout(spawnOne, delay); })(i * rand(150, 400));
   }
 
   tick();
