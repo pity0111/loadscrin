@@ -82,12 +82,12 @@ export default async function handler(req, res) {
   // Вариант 1: play_time + rank
   try {
     const [rows] = await db.execute(
-      "SELECT play_time, rank FROM sam_players WHERE steamid = ? LIMIT 1",
+      "SELECT play_time, `rank` FROM sam_players WHERE steamid = ? LIMIT 1",
       [steamidOld]
     );
     if (rows[0]) {
       result.playTime = formatPlayTime(rows[0].play_time);
-      result.rank     = rows[0].rank || "Юзер";
+      result.rank = rows[0]['rank'] || rows[0].rank || "Юзер";
     }
     await db.end();
 
@@ -114,7 +114,7 @@ export default async function handler(req, res) {
     );
     if (rows[0]) {
       result.playTime = formatPlayTime(rows[0].play_time);
-      result.rank     = rows[0].rank || "Юзер";
+      result.rank = rows[0]['rank'] || rows[0].rank || "Юзер";
     }
     await db.end();
 
