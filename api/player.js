@@ -53,14 +53,13 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "DB_CONNECT: " + e.message });
   }
 
-  // Дефолты для игрока которого нет в базе
   let result = {
     steamid64,
     steamidOld,
     rpname:   "Незнакомец",
-    wallet:   25000,          // дефолт: 25к
+    wallet:   25000,
     playTime: "0 минут",
-    rank:     "Юзер",         // дефолт
+    rank:     "Юзер",
     avatar:   null,
   };
 
@@ -79,50 +78,79 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: "DRP_QUERY: " + e.message });
   }
 
-  // ── sam_players — сначала смотрим какие колонки вообще есть ───────────────
+  // ── sam_players: пробуем разные варианты названия колонки ранга ────────────
+  // Вариант 1: play_time + rank
   try {
-    // Получаем список колонок таблицы
-    const [cols] = await db.execute(
-      "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sam_players'"
-    );
-    const colNames = cols.map(c => c.COLUMN_NAME.toLowerCase());
-
-    // Строим запрос динамически
-    const selectCols = ['steamid'];
-    if (colNames.includes('play_time'))  selectCols.push('play_time');
-    if (colNames.includes('rank'))       selectCols.push('rank');
-    if (colNames.includes('group'))      selectCols.push('`group`'); // часто rank хранится как group
-    if (colNames.includes('usergroup'))  selectCols.push('usergroup');
-
     const [rows] = await db.execute(
-      `SELECT ${selectCols.join(', ')} FROM sam_players WHERE steamid = ? LIMIT 1`,
+      "SELECT play_time, rank FROM sam_players WHERE steamid = ? LIMIT 1",
       [steamidOld]
     );
-
     if (rows[0]) {
-      const r = rows[0];
-      result.playTime = formatPlayTime(r.play_time);
-      // Берём ранг из первой найденной колонки
-      result.rank = r.rank || r['group'] || r.usergroup || "Юзер";
+      result.playTime = formatPlayTime(rows[0].play_time);
+      result.rank     = rows[0].rank || "Юзер";
+    }
+    await db.end();
+
+    // Steam аватарка
+    const steamKey = process.env.STEAM_API_KEY;
+    if (steamKey) {
+      try {
+        const r = await fetch(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamKey}&steamids=${steamid64}`);
+        const d = await r.json();
+        result.avatar = d?.response?.players?.[0]?.avatarmedium ?? null;
+      } catch (_) {}
     }
 
-    // Для отладки — возвращаем какие колонки нашли
-    result._debug_cols = colNames.join(',');
-
+    return res.status(200).json(result);
   } catch (e) {
-    // sam_players недоступна — не критично, оставляем дефолты
-    result._debug_sam_error = e.message;
+    result._debug_v1 = e.message;
+  }
+
+  // Вариант 2: может колонка называется `group` вместо rank
+  try {
+    const [rows] = await db.execute(
+      "SELECT play_time, `group` AS rank FROM sam_players WHERE steamid = ? LIMIT 1",
+      [steamidOld]
+    );
+    if (rows[0]) {
+      result.playTime = formatPlayTime(rows[0].play_time);
+      result.rank     = rows[0].rank || "Юзер";
+    }
+    await db.end();
+
+    const steamKey = process.env.STEAM_API_KEY;
+    if (steamKey) {
+      try {
+        const r = await fetch(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamKey}&steamids=${steamid64}`);
+        const d = await r.json();
+        result.avatar = d?.response?.players?.[0]?.avatarmedium ?? null;
+      } catch (_) {}
+    }
+
+    return res.status(200).json(result);
+  } catch (e) {
+    result._debug_v2 = e.message;
+  }
+
+  // Вариант 3: только play_time без ранга
+  try {
+    const [rows] = await db.execute(
+      "SELECT play_time FROM sam_players WHERE steamid = ? LIMIT 1",
+      [steamidOld]
+    );
+    if (rows[0]) {
+      result.playTime = formatPlayTime(rows[0].play_time);
+    }
+  } catch (e) {
+    result._debug_v3 = e.message;
   }
 
   await db.end();
 
-  // ── Steam аватарка ─────────────────────────────────────────────────────────
   const steamKey = process.env.STEAM_API_KEY;
   if (steamKey) {
     try {
-      const r = await fetch(
-        `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamKey}&steamids=${steamid64}`
-      );
+      const r = await fetch(`https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${steamKey}&steamids=${steamid64}`);
       const d = await r.json();
       result.avatar = d?.response?.players?.[0]?.avatarmedium ?? null;
     } catch (_) {}
