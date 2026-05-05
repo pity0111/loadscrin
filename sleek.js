@@ -128,7 +128,7 @@ $(function () {
   if (l_bgVideo) {
     $("body").append("<video loop autoplay muted><source src='" + l_background + "' type='video/webm'></video>");
   } else {
-//    $.backstretch(l_bgImages, { duration: l_bgImageDuration, fade: l_bgImageFadeVelocity });
+    $.backstretch(l_bgImages, { duration: l_bgImageDuration, fade: l_bgImageFadeVelocity });
   }
 
   if (l_serverName && !l_serverImage) setServerName(l_serverName);

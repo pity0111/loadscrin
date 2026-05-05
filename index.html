@@ -329,8 +329,8 @@ p {
     // ── Форматирование денег ────────────────────────────────────────────────
     function formatMoney(n) {
       n = parseInt(n) || 0;
-      if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'млн';
-      if (n >= 1000)    return (n / 1000).toFixed(1).replace(/\.0$/, '')    + 'к';
+      if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + ' млн';
+      if (n >= 1000)    return (n / 1000).toFixed(1).replace(/\.0$/, '')    + ' к';
       return String(n);
     }
 
@@ -562,7 +562,8 @@ p {
 
   tick();
 })();
-</script>
 
+
+</script>
 </body>
 </html>

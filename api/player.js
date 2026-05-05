@@ -21,7 +21,7 @@ function formatPlayTime(seconds) {
   const totalMin = Math.floor(seconds / 60);
   const h = Math.floor(totalMin / 60);
   const m = totalMin % 60;
-  return h > 0 ? `${h}ч ${m}м` : `${m}м`;
+  return h > 0 ? `${h} ч ${m} м` : `${m} м`;
 }
 
 export default async function handler(req, res) {
