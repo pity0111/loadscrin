@@ -354,9 +354,12 @@ p {
     }
 
     function showPlayerCard(data) {
+      // Игрока нет в базе (found === false) или данных совсем нет — плашку не показываем
+      if (!data || data.found === false) { hidePlayerCard(); return; }
+
       // Нет ни одного осмысленного поля — плашку не показываем
-      var hasAny = data && (data.rpname || data.rank || data.playTime ||
-                            data.wallet || data.wallet === 0 || data.avatar);
+      var hasAny = data.rpname || data.rank || data.playTime ||
+                   data.wallet || data.wallet === 0 || data.avatar;
       if (!hasAny) { hidePlayerCard(); return; }
 
       function orUnknown(v) {

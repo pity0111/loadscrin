@@ -56,10 +56,11 @@ export default async function handler(req, res) {
   let result = {
     steamid64,
     steamidOld,
-    rpname:   "Незнакомец",
-    wallet:   25000,
-    playTime: "0 минут",
-    rank:     "Юзер",
+    found:    false,   // найден ли игрок вообще в базе
+    rpname:   null,
+    wallet:   null,
+    playTime: null,
+    rank:     null,
     avatar:   null,
   };
 
@@ -70,8 +71,9 @@ export default async function handler(req, res) {
       [steamid64]
     );
     if (rows[0]) {
-      result.rpname = rows[0].rpname ?? result.rpname;
-      result.wallet = rows[0].wallet ?? result.wallet;
+      result.found  = true;
+      result.rpname = rows[0].rpname ?? null;
+      result.wallet = rows[0].wallet ?? null;
     }
   } catch (e) {
     await db.end();
@@ -86,8 +88,9 @@ export default async function handler(req, res) {
       [steamidOld]
     );
     if (rows[0]) {
+      result.found    = true;
       result.playTime = formatPlayTime(rows[0].play_time);
-      result.rank = rows[0]['rank'] || rows[0].rank || "Юзер";
+      result.rank     = rows[0]['rank'] || null;
     }
     await db.end();
 
@@ -113,8 +116,9 @@ export default async function handler(req, res) {
       [steamidOld]
     );
     if (rows[0]) {
+      result.found    = true;
       result.playTime = formatPlayTime(rows[0].play_time);
-      result.rank = rows[0]['rank'] || rows[0].rank || "Юзер";
+      result.rank     = rows[0]['rank'] || null;
     }
     await db.end();
 
@@ -139,6 +143,7 @@ export default async function handler(req, res) {
       [steamidOld]
     );
     if (rows[0]) {
+      result.found    = true;
       result.playTime = formatPlayTime(rows[0].play_time);
     }
   } catch (e) {
