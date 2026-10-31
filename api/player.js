@@ -43,10 +43,10 @@ export default async function handler(req, res) {
   let db;
   try {
     db = await mysql.createConnection({
-      host:           process.env.DB_HOST     || "92.53.90.39",
-      user:           process.env.DB_USER     || "gameserver33368",
-      password:       process.env.DB_PASSWORD || "2pL00hVr",
-      database:       process.env.DB_NAME     || "gameserver33368",
+      host:           process.env.DB_HOST     || "82.202.249.78",
+      user:           process.env.DB_USER     || "gameserver33477",
+      password:       process.env.DB_PASSWORD || "Xvz9ZXQI",
+      database:       process.env.DB_NAME     || "gameserver33477",
       connectTimeout: 8000,
     });
   } catch (e) {
