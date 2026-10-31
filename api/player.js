@@ -40,13 +40,27 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: e.message });
   }
 
+  // ── Реквизиты БД — только из переменных окружения Vercel ─────────────────
+  const dbHost = process.env.DB_HOST;
+  const dbUser = process.env.DB_USER;
+  const dbPass = process.env.DB_PASSWORD;
+  const dbName = process.env.DB_NAME;
+  const dbPort = Number(process.env.DB_PORT) || 3306;
+
+  if (!dbHost || !dbUser || !dbPass || !dbName) {
+    return res.status(500).json({
+      error: "DB_CONFIG: не заданы переменные окружения DB_HOST, DB_USER, DB_PASSWORD, DB_NAME",
+    });
+  }
+
   let db;
   try {
     db = await mysql.createConnection({
-      host:           process.env.DB_HOST     || "82.202.249.78",
-      user:           process.env.DB_USER     || "gameserver33477",
-      password:       process.env.DB_PASSWORD || "Xvz9ZXQI",
-      database:       process.env.DB_NAME     || "gameserver33477",
+      host:     dbHost,
+      user:     dbUser,
+      password: dbPass,
+      database: dbName,
+      port:     dbPort,
       connectTimeout: 8000,
     });
   } catch (e) {
