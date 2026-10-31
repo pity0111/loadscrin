@@ -1,7 +1,7 @@
 // ── Дефолты конфига (если config.js не подключён) ────────────────────────────
 if (typeof l_serverName      === 'undefined') var l_serverName      = '';
 if (typeof l_serverImage     === 'undefined') var l_serverImage     = '';
-if (typeof l_bgImages        === 'undefined') var l_bgImages        = ['fon.png'];
+if (typeof l_bgImages        === 'undefined') var l_bgImages        = ['dddddd.png'];
 if (typeof l_bgImagesRandom  === 'undefined') var l_bgImagesRandom  = false;
 if (typeof l_bgImageDuration === 'undefined') var l_bgImageDuration = 5000;
 if (typeof l_bgImageFadeVelocity==='undefined') var l_bgImageFadeVelocity = 1000;
@@ -82,14 +82,22 @@ function SetFilesNeeded(needed) {
 }
 
 function refreshProgress() {
-  var progress = Math.floor(((downloadedFiles / neededFiles) * 100));
+  if (!neededFiles || neededFiles <= 0) return;
+  var progress = Math.floor((downloadedFiles / neededFiles) * 100);
   setProgress(progress);
 }
 
-function setStatus(text) {}
+function setStatus(text) {
+  var el = document.getElementById('load-status');
+  if (el && text) el.textContent = text;
+}
 
 function setProgress(progress) {
-  $("#loading-progress").css("width", progress + "%");
+  progress = Math.max(0, Math.min(100, parseInt(progress, 10) || 0));
+  var bar = document.getElementById('loading-progress');
+  if (bar) bar.style.width = progress + '%';
+  var pct = document.getElementById('load-percent');
+  if (pct) pct.textContent = progress + '%';
 }
 
 function setGamemode(gamemode) {
