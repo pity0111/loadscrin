@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>SpiritRP</title>
-<link rel="stylesheet" href="sleek.css?v=2">
+<link rel="stylesheet" href="sleek.css?v=3">
 <style>
 
 /* Фон подключается через backstretch (sleek.js) */
@@ -349,6 +349,15 @@ p {
   </div>
 
   <script>
+    // ── Адрес API. Если домен другой — поменяй здесь ─────────────────────────
+    var API_BASE = 'https://loadscrin.vercel.app/api';
+
+    // Всего попыток получить данные (данные шлёт Lua при подключении,
+    // поэтому первые секунды ответ может быть found:false — это нормально)
+    var CARD_MAX_ATTEMPTS = 14;
+    var _cardAttempts = 0;
+    var _cardStarted  = false;
+
     // ── Форматирование денег ────────────────────────────────────────────────
     function formatMoney(n) {
       n = parseInt(n) || 0;
@@ -357,68 +366,78 @@ p {
       return String(n);
     }
 
-    // ── Загрузка плашки игрока (с retry при неудаче) ─────────────────────────
-    function loadPlayerCard(steamid, attempt) {
-      if (!steamid || steamid === '') return;
-      attempt = attempt || 1;
-
+    // ── Плашка игрока: одна попытка запроса ──────────────────────────────────
+    function fetchPlayerCard(steamid) {
+      _cardAttempts++;
+      var attempt = _cardAttempts;
       var card = document.getElementById('player-card');
       card.style.display = 'flex';
-      if (attempt === 1) card.classList.add('loading');
+      card.classList.add('loading');   // shimmer, пока данных нет
+
+      var done = false;
+
+      function retry() {
+        if (done) return;
+        done = true;
+        if (attempt >= CARD_MAX_ATTEMPTS) {
+          card.classList.remove('loading');
+          document.getElementById('pc-name').textContent = 'Нет данных';
+          return;
+        }
+        // Плавно увеличиваем паузу: 1.8с → 5с
+        var delay = Math.min(1200 + attempt * 600, 5000);
+        setTimeout(function() { fetchPlayerCard(steamid); }, delay);
+      }
 
       var xhr = new XMLHttpRequest();
-      xhr.open('GET', 'https://loadscrin.vercel.app/api/player?steamid=' + encodeURIComponent(steamid), true);
-      xhr.timeout = 12000;
+      xhr.open('GET', API_BASE + '/player?steamid=' + encodeURIComponent(steamid), true);
+      xhr.timeout = 10000;
 
       xhr.onreadystatechange = function() {
-        if (xhr.readyState !== 4) return;
-        card.classList.remove('loading');
+        if (xhr.readyState !== 4 || done) return;
 
         if (xhr.status === 200) {
-          try {
-            var data = JSON.parse(xhr.responseText);
-            document.getElementById('pc-name').textContent   = data.rpname   || 'Незнакомец';
-            document.getElementById('pc-rank').textContent   = data.rank     || 'Юзер';
-            document.getElementById('pc-job').textContent    = data.playTime || '0 минут';
-            document.getElementById('pc-wallet').textContent = formatMoney(data.wallet);
-            if (data.avatar) {
-              var avatarWrap = document.getElementById('pc-avatar-wrap');
-              avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
-            }
-          } catch(e) {
-            document.getElementById('pc-name').textContent = 'Ошибка';
+          var data;
+          try { data = JSON.parse(xhr.responseText); } catch (e) { retry(); return; }
+
+          // found:false — сервер ещё не получил данные от Lua, пробуем позже
+          if (!data || data.found === false) { retry(); return; }
+
+          done = true;
+          card.classList.remove('loading');
+          document.getElementById('pc-name').textContent   = data.rpname   || 'Незнакомец';
+          document.getElementById('pc-rank').textContent   = data.rank     || 'Юзер';
+          document.getElementById('pc-job').textContent    = data.playTime || '0 минут';
+          document.getElementById('pc-wallet').textContent = formatMoney(data.wallet);
+          if (data.avatar) {
+            document.getElementById('pc-avatar-wrap').innerHTML =
+              '<img src="' + data.avatar + '" alt="avatar">';
           }
-        } else {
-          // Retry до 3 раз с увеличивающейся задержкой
-          if (attempt < 3) {
-            setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, attempt * 2000);
-          } else {
-            document.getElementById('pc-name').textContent = 'Нет данных';
-          }
+          return;
         }
+
+        retry();
       };
 
-      xhr.onerror = function() {
-        card.classList.remove('loading');
-        if (attempt < 3) {
-          setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, attempt * 2000);
-        }
-      };
-
-      xhr.ontimeout = function() {
-        if (attempt < 3) {
-          setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, 1000);
-        }
-      };
-
+      xhr.onerror    = retry;
+      xhr.ontimeout  = retry;
       xhr.send();
     }
-    // ── Ждём steamid от GameDetails (опрос каждые 300мс, до 15 секунд) ──────
+
+    // ── Точка входа (защита от двойного вызова из GameDetails и опроса) ──────
+    function loadPlayerCard(steamid) {
+      if (_cardStarted || !steamid || steamid === '') return;
+      _cardStarted = true;
+      _cardAttempts = 0;
+      fetchPlayerCard(steamid);
+    }
+
+    // ── Ждём steamid от GameDetails (опрос каждые 300мс, до 30 секунд) ──────
     var _cardLoaded = false;
     var _pollCount  = 0;
     var _pollTimer  = setInterval(function() {
       _pollCount++;
-      if (_cardLoaded || _pollCount > 50) {
+      if (_cardLoaded || _pollCount > 100) {
         clearInterval(_pollTimer);
         return;
       }
@@ -432,7 +451,7 @@ p {
 
   <script src="lib/jquery-2.1.1.min.js"></script>
   <script src="lib/jquery.backstretch.min.js"></script>
-  <script src="sleek.js?v=2"></script>
+  <script src="sleek.js?v=3"></script>
 
   <script>
 // ── 3D Плавающие фигуры ────────────────────────────────────────────────────
