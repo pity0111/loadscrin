@@ -1,21 +1,5 @@
-import { createClient } from "@libsql/client";
-
-// ── SteamID helpers ──────────────────────────────────────────────────────────
-function toSteamID64(steamid) {
-  if (/^\d{17}$/.test(steamid)) return steamid;
-  const match = String(steamid).match(/^STEAM_\d:(\d):(\d+)$/i);
-  if (!match) throw new Error("Неверный формат SteamID: " + steamid);
-  const authserver = BigInt(match[1]);
-  const authid     = BigInt(match[2]);
-  return (BigInt("76561197960265728") + authid * BigInt(2) + authserver).toString();
-}
-
-function toSteamID(steamid64) {
-  const big  = BigInt(steamid64) - BigInt("76561197960265728");
-  const auth = big % BigInt(2);
-  const id   = (big - auth) / BigInt(2);
-  return `STEAM_0:${auth}:${id}`;
-}
+import { d1Query, ensurePlayersTable } from "../shared/d1.js";
+import { toSteamID64, toSteamID } from "../shared/steamid.js";
 
 // ── Декодирование полей ──────────────────────────────────────────────────────
 // Lua-скрипт шлёт текстовые поля в base64url (enc=b64), чтобы спецсимволы
@@ -53,32 +37,7 @@ function collectParams(req) {
   return out;
 }
 
-// ── Турсо (SQLite-облако) ────────────────────────────────────────────────────
-const SCHEMA_SQL = `
-CREATE TABLE IF NOT EXISTS players (
-  steamid64 TEXT PRIMARY KEY,
-  steamid   TEXT,
-  rpname    TEXT,
-  wallet    INTEGER,
-  rank      TEXT,
-  play_time INTEGER,
-  job       TEXT,
-  updated_at INTEGER
-)`;
-
-function getClient() {
-  const url = process.env.TURSO_DATABASE_URL;
-  if (!url) {
-    const err = new Error(
-      "DB_CONFIG: не задана переменная окружения TURSO_DATABASE_URL (см. SETUP.md)"
-    );
-    err.status = 500;
-    throw err;
-  }
-  return createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
-}
-
-// ── Handler ──────────────────────────────────────────────────────────────────
+// ── Handler: приём данных игрока от Lua-скрипта с GMod-сервера ──────────────
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -123,23 +82,21 @@ export default async function handler(req, res) {
   };
 
   try {
-    const db = getClient();
-    await db.execute(SCHEMA_SQL);
+    await ensurePlayersTable();
 
     // Обновляем только присланные поля, остальные не трогаем
-    await db.execute({
-      sql: `
-INSERT INTO players (steamid64, steamid, rpname, wallet, rank, play_time, job, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-ON CONFLICT(steamid64) DO UPDATE SET
-  steamid   = excluded.steamid,
-  rpname    = COALESCE(excluded.rpname,    players.rpname),
-  wallet    = COALESCE(excluded.wallet,    players.wallet),
-  rank      = COALESCE(excluded.rank,      players.rank),
-  play_time = COALESCE(excluded.play_time, players.play_time),
-  job       = COALESCE(excluded.job,       players.job),
-  updated_at = excluded.updated_at`,
-      args: [
+    await d1Query(
+      `INSERT INTO players (steamid64, steamid, rpname, wallet, rank, play_time, job, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(steamid64) DO UPDATE SET
+         steamid   = excluded.steamid,
+         rpname    = COALESCE(excluded.rpname,    players.rpname),
+         wallet    = COALESCE(excluded.wallet,    players.wallet),
+         rank      = COALESCE(excluded.rank,      players.rank),
+         play_time = COALESCE(excluded.play_time, players.play_time),
+         job       = COALESCE(excluded.job,       players.job),
+         updated_at = excluded.updated_at`,
+      [
         steamid64,
         steamidOld,
         data.rpname,
@@ -148,8 +105,8 @@ ON CONFLICT(steamid64) DO UPDATE SET
         data.play_time,
         data.job,
         Math.floor(Date.now() / 1000),
-      ],
-    });
+      ]
+    );
 
     return res.status(200).json({ ok: true, steamid64, updated: data });
   } catch (e) {

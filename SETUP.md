@@ -1,4 +1,4 @@
-# Настройка загрузочного экрана (Vercel + Turso + SQLite)
+# Настройка загрузочного экрана (Vercel + Cloudflare D1)
 
 ## Как это работает
 
@@ -8,11 +8,12 @@
 │  sv_loadscreen_     │   sam_players)     │  /api/push  (запись) │
 │  push.lua           │ ─────────────────► │  /api/player (чтение)│
 └─────────────────────┘   HTTP GET при     └──────────┬───────────┘
-                                    подключении       │
+                                    подключения       │ HTTPS API
                                                       ▼
                                            ┌──────────────────────┐
-                                           │  Turso (SQLite)      │
-                                           │  таблица players     │
+                                           │ Cloudflare D1        │
+                                           │ (SQLite в облаке)    │
+                                           │ таблица players      │
                                            └──────────────────────┘
                                                       ▲
                                            ┌──────────┴───────────┐
@@ -24,37 +25,62 @@
                                            └──────────────────────┘
 ```
 
-MySQL больше не нужен: все данные игроков лежат в SQLite (Turso — это SQLite
-в облаке), а отдаются они на экран только после того, как Lua-скрипт положил
-их туда при подключении игрока.
+MySQL и Turso не нужны: данные игроков лежат в **Cloudflare D1** — это
+обычный SQLite, только в облаке Cloudflare (регистрация и работа доступны
+из РФ, карта не нужна, бесплатный тир). Vercel-функции ходят в D1 по
+HTTPS API, поэтому никакие npm-зависимости не используются.
 
 ---
 
-## Шаг 1. Turso (база данных)
+## Шаг 1. Cloudflare (база данных D1)
 
-1. Зарегистрируйтесь на <https://turso.tech> (есть бесплатный тир).
-2. Установите CLI и создайте базу:
+### 1.1 Регистрация
 
-```bash
-curl -sSfL https://get.turso.io | bash
-turso auth login
-turso db create loadscrin
-turso db show loadscrin --url     # это TURSO_DATABASE_URL
-turso db tokens create loadscrin  # это TURSO_AUTH_TOKEN
-```
+<https://dash.cloudflare.com/sign-up> — email и пароль, карта не нужна.
 
-3. Таблица создастся автоматически при первом запросе API.
-   При желании создайте её вручную — SQL лежит в `api/schema.sql`
-   (в консоли Turso: Database → SQL → вставить).
+### 1.2 Создать базу
+
+В левой панели найди раздел **D1** (если его нет — Workers & Pages → D1) →
+**Create database**:
+
+- Имя: `loadscrin`
+- Location: можно «Automatic» (важно лишь то, что база доступна по HTTPS)
+
+### 1.3 Таблица
+
+В карточке базы → вкладка **Console** → вставь содержимое `api/schema.sql`
+→ **Run**.
+
+> Не обязательно: таблица создаётся автоматически при первом запросе API.
+
+### 1.3 API-токен
+
+Аватарка (правый верхний) → **My Profile** → **API Tokens** →
+**Create Token** → **Create Custom Token**:
+
+| Поле | Значение |
+|---|---|
+| Permissions | **Account** → **D1** → **Edit** |
+| Account Resources | **Include** → **Specific account** → твой аккаунт |
+
+→ Continue to summary → имя `loadscrin-vercel` → **Create Token** →
+**Copy** (токен показывается только один раз!).
+
+### 1.4 Идентификаторы
+
+- **Account ID**: главная страница дашборда, блок справа (или в URL сразу
+  после `dash.cloudflare.com/`)
+- **Database ID**: D1 → база `loadscrin` → вкладка Info → **Copy Database ID**
 
 ## Шаг 2. Vercel (переменные окружения)
 
 В проекте на Vercel → **Settings → Environment Variables** добавьте:
 
-| Переменная | Значение |
+| Переменная | Что туда положить |
 |---|---|
-| `TURSO_DATABASE_URL` | URL базы из `turso db show --url` |
-| `TURSO_AUTH_TOKEN` | токен из `turso db tokens create` |
+| `CF_ACCOUNT_ID` | Account ID из Cloudflare |
+| `CF_D1_DATABASE_ID` | Database ID из Cloudflare |
+| `CF_D1_API_TOKEN` | созданный API-токен |
 | `PUSH_SECRET` | случайная строка **только из букв и цифр** (см. ниже) |
 | `STEAM_API_KEY` | *опционально* — чтобы были аватарки Steam |
 
@@ -85,11 +111,8 @@ curl.exe "https://loadscrin.vercel.app/api/player?steamid=76561198012345678"
 
 Ожидаемо: первый вернёт `{"ok":true,...}`, второй — `{"found":true,"rpname":"Ivan",...}`.
 
-Проверить базу:
-
-```bash
-turso db shell loadscrin "SELECT * FROM players"
-```
+Проверить базу: D1 → база `loadscrin` → **Console** →
+`SELECT * FROM players;` → **Run**.
 
 ## Шаг 4. Lua-скрипт на GMod-сервере (MyArena)
 
@@ -105,7 +128,7 @@ local SECRET  = "ТВОЙ_ТОТ_ЖЕ_SECRET"   -- должен совпадат
 local DEBUG   = true                    -- лог в консоль сервера
 ```
 
-Перезапустите сервер (или сделайте `changeload`/`changelevel`).
+Перезапустите сервер (или сделайте `changelevel`).
 
 Скрипт шлёт данные в три момента:
 
@@ -159,8 +182,10 @@ loadscrin_test 76561198012345678
 |---|---|
 | На экране «Нет данных» | Посмотри лог `[loadscrin]` в консоли сервера и сделай `loadscrin_test <steamid64>` |
 | `Ошибка HTTP 401` | `SECRET` в Lua не совпадает с `PUSH_SECRET` на Vercel |
-| `Ошибка HTTP 500` + `DB_CONFIG` | Не заданы `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN`, или не был Redeploy после добавления env |
-| `Ошибка отправки: ...` | Сервер не может достучаться до `loadscrin.vercel.app` (проверь доступ к исходящему HTTP на хостинге) |
+| `error: DB_CONFIG: ...` | Не заданы `CF_ACCOUNT_ID` / `CF_D1_DATABASE_ID` / `CF_D1_API_TOKEN`, или не был Redeploy после добавления env |
+| `error: D1_QUERY: Invalid access token` | Токен неверный или без права **D1 → Edit**; проверь, что привязан к нужному аккаунту |
+| `error: D1_FETCH: ...` | Vercel не может достучаться до api.cloudflare.com (крайне редко) |
+| `error: D1_QUERY: no such table` | Проверь, что база создана и `CF_D1_DATABASE_ID` именно от неё |
 | В базе пусто, хотя игроки есть | Данные пишутся только при подключении — зайди на сервер один раз и повтори `loadscrin_test` |
 | Кириллица кракозябрами | Не должно случаться: текст шлётся в base64url. Если всё же видишь мусор — пришли лог |
 
@@ -171,10 +196,13 @@ loadscrin/
 ├── index.html                     # сам загрузочный экран (логика плашки обновлена)
 ├── sleek.js / sleek.css           # прогресс, статус, фон
 ├── api/
-│   ├── player.js                  # GET  — отдаёт данные игрока (Turso)
-│   ├── push.js                    # POST/GET — приём данных от Lua (Turso)
+│   ├── player.js                  # GET  — отдаёт данные игрока (D1)
+│   ├── push.js                    # GET/POST — приём данных от Lua (D1)
 │   ├── schema.sql                 # схема таблицы (создаётся автоматически)
 │   └── package.json
+├── shared/                        # серверный код, общий для api/*.js
+│   ├── d1.js                      # клиент Cloudflare D1 (HTTPS API)
+│   └── steamid.js                 # конвертация SteamID и формат времени
 ├── lua/autorun/server/
 │   └── sv_loadscreen_push.lua     # ← скрипт для GMod-сервера
 ├── package.json

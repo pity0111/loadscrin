@@ -1,57 +1,7 @@
-import { createClient } from "@libsql/client";
+import { d1Query, ensurePlayersTable } from "../shared/d1.js";
+import { toSteamID64, toSteamID, formatPlayTime } from "../shared/steamid.js";
 
-// ── SteamID helpers ──────────────────────────────────────────────────────────
-function toSteamID64(steamid) {
-  if (/^\d{17}$/.test(steamid)) return steamid;
-  const match = steamid.match(/^STEAM_\d:(\d):(\d+)$/i);
-  if (!match) throw new Error("Неверный формат SteamID: " + steamid);
-  const authserver = BigInt(match[1]);
-  const authid     = BigInt(match[2]);
-  return (BigInt("76561197960265728") + authid * BigInt(2) + authserver).toString();
-}
-
-function toSteamID(steamid64) {
-  const big  = BigInt(steamid64) - BigInt("76561197960265728");
-  const auth = big % BigInt(2);
-  const id   = (big - auth) / BigInt(2);
-  return `STEAM_0:${auth}:${id}`;
-}
-
-function formatPlayTime(seconds) {
-  seconds = Number(seconds) || 0;
-  if (seconds <= 0) return "0 минут";
-  const totalMin = Math.floor(seconds / 60);
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  return h > 0 ? `${h} ч ${m} м` : `${m} м`;
-}
-
-// ── Турсо (SQLite-облако) ────────────────────────────────────────────────────
-const SCHEMA_SQL = `
-CREATE TABLE IF NOT EXISTS players (
-  steamid64 TEXT PRIMARY KEY,
-  steamid   TEXT,
-  rpname    TEXT,
-  wallet    INTEGER,
-  rank      TEXT,
-  play_time INTEGER,
-  job       TEXT,
-  updated_at INTEGER
-)`;
-
-function getClient() {
-  const url = process.env.TURSO_DATABASE_URL;
-  if (!url) {
-    const err = new Error(
-      "DB_CONFIG: не задана переменная окружения TURSO_DATABASE_URL (см. SETUP.md)"
-    );
-    err.status = 500;
-    throw err;
-  }
-  return createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN });
-}
-
-// ── Handler ──────────────────────────────────────────────────────────────────
+// ── Handler: отдаёт данные игрока для плашки на загрузочном экране ──────────
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -83,22 +33,21 @@ export default async function handler(req, res) {
   };
 
   try {
-    const db = getClient();
-    await db.execute(SCHEMA_SQL);
+    await ensurePlayersTable();
 
-    const rs = await db.execute({
-      sql: "SELECT * FROM players WHERE steamid64 = ? LIMIT 1",
-      args: [steamid64],
-    });
-    const row = rs.rows[0];
+    const { rows } = await d1Query(
+      "SELECT * FROM players WHERE steamid64 = ? LIMIT 1",
+      [steamid64]
+    );
+    const row = rows[0];
 
     if (row) {
       result.found     = true;
-      result.rpname    = row.rpname   ?? null;
-      result.wallet    = row.wallet   ?? null;
+      result.rpname    = row.rpname    ?? null;
+      result.wallet    = row.wallet    ?? null;
       result.playTime  = formatPlayTime(row.play_time);
-      result.rank      = row.rank     ?? null;
-      result.job       = row.job      ?? null;
+      result.rank      = row.rank      ?? null;
+      result.job       = row.job       ?? null;
       result.updatedAt = row.updated_at ?? null;
     }
 

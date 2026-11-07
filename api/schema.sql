@@ -1,4 +1,4 @@
--- Схема базы данных загрузочного экрана (Turso / SQLite).
+-- Схема базы данных загрузочного экрана (Cloudflare D1 / SQLite).
 -- API создаёт эту таблицу автоматически, вручную запускать не обязательно.
 CREATE TABLE IF NOT EXISTS players (
   steamid64 TEXT PRIMARY KEY,  -- SteamID64 игрока

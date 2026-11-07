@@ -7,7 +7,7 @@
     Как работает:
       1. Игрок начинает подключаться  → хук CheckPassword / событие player_connect
          скрипт читает данные из SQLite (sv.db: darkrp_player, sam_players)
-         и отправляет их на API (Vercel + Turso).
+         и отправляет их на API (Vercel + Cloudflare D1).
       2. Загрузочная страница берёт steamid из GameDetails и читает данные
          с GET /api/player?steamid=... — плашка игрока заполняется.
       3. После спавна (PlayerInitialSpawn) данные обновляются ещё раз
