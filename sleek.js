@@ -1,7 +1,7 @@
 // ── Дефолты конфига (если config.js не подключён) ────────────────────────────
 if (typeof l_serverName      === 'undefined') var l_serverName      = '';
 if (typeof l_serverImage     === 'undefined') var l_serverImage     = '';
-if (typeof l_bgImages        === 'undefined') var l_bgImages        = ['dddddd.png'];
+if (typeof l_bgImages        === 'undefined') var l_bgImages        = ['bg.png'];
 if (typeof l_bgImagesRandom  === 'undefined') var l_bgImagesRandom  = false;
 if (typeof l_bgImageDuration === 'undefined') var l_bgImageDuration = 5000;
 if (typeof l_bgImageFadeVelocity==='undefined') var l_bgImageFadeVelocity = 1000;

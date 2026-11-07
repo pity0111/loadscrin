@@ -1,14 +1,14 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="utf-8">
 <title>SpiritRP</title>
-<link rel="stylesheet" href="sleek.css">
+<link rel="stylesheet" href="sleek.css?v=2">
 <style>
 
-/* Убираем фоновую картинку */
+/* Фон подключается через backstretch (sleek.js) */
 body {
-  background-image: none !important;
-  background-color: #000 !important;
+  background-color: #060311 !important;
 }
 
 @font-face {
@@ -32,7 +32,7 @@ p {
 }
 
 /* ═══════════════════════════════════════════════
-   НИЖНЯЯ ПОЛОСА ЗАГРУЗКИ
+   НИЖНЯЯ ПОЛОСА ЗАГРУЗКИ (фиолетовая)
 ═══════════════════════════════════════════════ */
 #load-bar-wrap {
   position: fixed;
@@ -54,10 +54,10 @@ p {
 }
 
 #load-status {
-  color: #ffe4c9;
+  color: #eedeff;
   text-shadow:
-    0 0 10px rgba(255, 120, 30, 0.55),
-    0 0 22px rgba(159, 64, 221, 0.4);
+    0 0 10px rgba(159, 64, 221, 0.55),
+    0 0 22px rgba(120, 40, 200, 0.4);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -66,9 +66,9 @@ p {
 
 #load-percent {
   font-size: 22px;
-  color: #ff9f1c;
+  color: #c084fc;
   text-shadow:
-    0 0 12px rgba(255, 130, 40, 0.9),
+    0 0 12px rgba(168, 85, 247, 0.9),
     0 0 26px rgba(159, 64, 221, 0.5);
 }
 
@@ -76,11 +76,11 @@ p {
   width: 100%;
   height: 10px;
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 130, 40, 0.45);
+  border: 1px solid rgba(159, 64, 221, 0.45);
   border-radius: 6px;
   overflow: hidden;
   box-shadow:
-    0 0 20px rgba(255, 110, 20, 0.25),
+    0 0 20px rgba(159, 64, 221, 0.25),
     0 0 32px rgba(120, 40, 200, 0.22),
     inset 0 0 12px rgba(0, 0, 0, 0.5);
 }
@@ -89,44 +89,21 @@ p {
   height: 100%;
   width: 0%;
   border-radius: 6px;
-  background: linear-gradient(90deg, #ff6b1a, #ff9f1c, #c084fc);
+  background: linear-gradient(90deg, #7c3aed, #a855f7, #d8b4fe);
   box-shadow:
-    0 0 14px rgba(255, 120, 30, 0.9),
+    0 0 14px rgba(168, 85, 247, 0.9),
     0 0 28px rgba(159, 64, 221, 0.55);
   transition: width 0.4s ease;
 }
 
-/* ── Холст искр ── */
-#sparks {
+/* ═══════════════════════════════════════════════
+   ЧАСТИЦЫ — холст поверх фона
+═══════════════════════════════════════════════ */
+#fx-canvas {
   position: fixed;
   top: 0; left: 0;
   pointer-events: none;
-  z-index: 998;
-}
-
-#image-container {
-  position: absolute;
-  width: 20vw;
-  height: 20vw;
-  max-width: 300px;
-  max-height: 300px;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  right: 0;
-  margin: auto;
-}
-
-#image-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  position: absolute;
-  top: 0;
-  left: 0;
-  filter:
-    drop-shadow(0 0 18px rgba(255, 120, 30, 0.45))
-    drop-shadow(0 0 45px rgba(159, 64, 221, 0.3));
+  z-index: 999;
 }
 
 /* ═══════════════════════════════════════════════
@@ -143,19 +120,18 @@ p {
   width: 300px;
 
   background: linear-gradient(150deg,
-    rgba(30, 10, 8, 0.88) 0%,
+    rgba(8, 3, 22, 0.88) 0%,
     rgba(25, 8, 55, 0.84) 100%
   );
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 130, 40, 0.55);
+  border: 1px solid rgba(159, 64, 221, 0.5);
   border-radius: 16px;
   overflow: hidden;
   box-shadow:
     0 0 0 1px rgba(0,0,0,0.5),
     0 8px 32px rgba(0,0,0,0.6),
-    0 0 30px rgba(255, 110, 20, 0.18),
-    0 0 30px rgba(120, 40, 200, 0.22),
+    0 0 30px rgba(100, 30, 180, 0.2),
     inset 0 1px 0 rgba(255,255,255,0.07);
   animation: cardAppear 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
@@ -178,14 +154,21 @@ p {
   position: relative;
   flex-shrink: 0;
 }
-#player-card .pc-avatar img {
+#player-card .pc-avatar img,
+#player-card .pc-avatar-placeholder {
   width: 68px;
   height: 68px;
   border-radius: 12px;
   object-fit: cover;
-  display: block;
-  border: 2px solid rgba(255, 130, 40, 0.7);
-  box-shadow: 0 0 16px rgba(255, 120, 30, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgba(159, 64, 221, 0.65);
+  box-shadow: 0 0 16px rgba(159, 64, 221, 0.4);
+}
+#player-card .pc-avatar-placeholder {
+  background: linear-gradient(135deg, #1e0840, #3d1270);
+  font-size: 30px;
 }
 #player-card .pc-online-dot {
   position: absolute;
@@ -212,10 +195,8 @@ p {
 #player-card .pc-name {
   font-family: 'vksans', monospace;
   font-size: 16px;
-  color: #ffeada;
-  text-shadow:
-    0 0 12px rgba(255, 130, 40, 0.6),
-    0 0 20px rgba(180, 100, 255, 0.5);
+  color: #eedeff;
+  text-shadow: 0 0 12px rgba(180, 100, 255, 0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -226,9 +207,9 @@ p {
   gap: 5px;
   font-family: 'vksans', monospace;
   font-size: 11px;
-  color: #ffb35c;
-  background: rgba(255, 130, 40, 0.16);
-  border: 1px solid rgba(255, 130, 40, 0.38);
+  color: #c084fc;
+  background: rgba(159, 64, 221, 0.18);
+  border: 1px solid rgba(159, 64, 221, 0.35);
   border-radius: 6px;
   padding: 2px 8px;
   width: fit-content;
@@ -240,7 +221,7 @@ p {
 #player-card .pc-rank::before {
   content: '★';
   font-size: 9px;
-  color: #ff8c1a;
+  color: #a855f7;
 }
 
 /* ── Нижняя секция: деньги + время ── */
@@ -257,12 +238,16 @@ p {
   padding: 12px 10px;
 }
 #player-card .pc-stat:first-child {
-  border-right: 1px solid rgba(255, 130, 40, 0.22);
+  border-right: 1px solid rgba(159, 64, 221, 0.2);
+}
+#player-card .pc-stat-icon {
+  font-size: 20px;
+  line-height: 1;
 }
 #player-card .pc-stat-label {
   font-family: 'vksans', monospace;
   font-size: 9px;
-  color: rgba(255, 210, 170, 0.55);
+  color: rgba(200,160,255,0.5);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -270,15 +255,58 @@ p {
   font-family: 'vksans', monospace;
   font-size: 15px;
   font-weight: bold;
-  color: #ffb35c;
-  text-shadow: 0 0 10px rgba(255, 140, 50, 0.55);
+  color: #7dffb0;
+  text-shadow: 0 0 10px rgba(100, 255, 150, 0.5);
 }
 #player-card .pc-stat:last-child .pc-stat-value {
-  color: #ffb35c;
-  text-shadow: 0 0 10px rgba(255, 140, 50, 0.55);
+  color: #93c5fd;
+  text-shadow: 0 0 10px rgba(100, 180, 255, 0.5);
 }
 
-/* ── Плавающие кубы удалены — теперь искры снизу (см. script выше) ── */
+/* ── Шиммер при загрузке ── */
+#player-card.loading .pc-name,
+#player-card.loading .pc-rank,
+#player-card.loading .pc-stat-value {
+  background: linear-gradient(90deg,
+    rgba(255,255,255,0.05) 25%,
+    rgba(255,255,255,0.14) 50%,
+    rgba(255,255,255,0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+  color: transparent !important;
+  text-shadow: none !important;
+  min-width: 60px; min-height: 12px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Плавающие кубы (вместо снежинок) ── */
+.cube-wrap {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9998;
+  perspective: 300px;
+}
+.pixel-cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+}
+.cube-face {
+  position: absolute;
+  width: 100%; height: 100%;
+}
+.cube-face.front  { background: rgba(120, 40, 200, 0.55); transform: translateZ(calc(var(--s)/2)); }
+.cube-face.back   { background: rgba(80,  20, 150, 0.55); transform: rotateY(180deg) translateZ(calc(var(--s)/2)); }
+.cube-face.left   { background: rgba(60,  10, 120, 0.55); transform: rotateY(-90deg) translateZ(calc(var(--s)/2)); }
+.cube-face.right  { background: rgba(90,  30, 170, 0.55); transform: rotateY( 90deg) translateZ(calc(var(--s)/2)); }
+.cube-face.top    { background: rgba(180, 80, 255, 0.55); transform: rotateX( 90deg) translateZ(calc(var(--s)/2)); }
+.cube-face.bottom { background: rgba(50,  10, 100, 0.55); transform: rotateX(-90deg) translateZ(calc(var(--s)/2)); }
+
 
 </style>
 </head>
@@ -286,7 +314,7 @@ p {
   <!-- ═══ ПОЛОСА ЗАГРУЗКИ ═══ -->
   <div id="load-bar-wrap">
     <div class="lb-row">
-      <span id="load-status">Загрузка</span><span id="dots"></span>
+      <span id="load-status"></span>
       <span id="load-percent">0%</span>
     </div>
     <div id="load-bar">
@@ -294,30 +322,26 @@ p {
     </div>
   </div>
 
-  <!-- ═══ ЛОГОТИП (ВРЕМЕННО УБРАН — фон вместо него) ═══
-  <div id="image-container">
-    <img src="spirit_logo_5.png" class="center">
-  </div>
-  ═══════════════════════════════════════════════════════ -->
-
-  <!-- ═══ ПЛАШКА ИГРОКА (скрыта, пока нет данных) ═══ -->
+  <!-- ═══ ПЛАШКА ИГРОКА ═══ -->
   <div id="player-card">
     <div class="pc-top">
-      <div class="pc-avatar" id="pc-avatar" style="display:none;">
-        <div id="pc-avatar-wrap"></div>
+      <div class="pc-avatar">
+        <div class="pc-avatar-placeholder" id="pc-avatar-wrap">👤</div>
         <div class="pc-online-dot"></div>
       </div>
       <div class="pc-identity">
         <div class="pc-name" id="pc-name">—</div>
-        <div class="pc-rank" id="pc-rank">—</div>
+        <div class="pc-rank" id="pc-rank">Игрок</div>
       </div>
     </div>
     <div class="pc-stats">
       <div class="pc-stat">
+        <span class="pc-stat-icon">💰</span>
         <span class="pc-stat-label">Деньги</span>
-        <span class="pc-stat-value" id="pc-wallet">—</span>
+        <span class="pc-stat-value" id="pc-wallet">0</span>
       </div>
       <div class="pc-stat">
+        <span class="pc-stat-icon">⏱</span>
         <span class="pc-stat-label">Наигранно</span>
         <span class="pc-stat-value" id="pc-job">—</span>
       </div>
@@ -325,17 +349,6 @@ p {
   </div>
 
   <script>
-    // ── Анимация точек ──────────────────────────────────────────────────────
-    var dotsElement = document.getElementById('dots');
-    var dotCount = 0;
-    function animateDots() {
-      var dots = '';
-      for (var i = 0; i < dotCount; i++) dots += '.';
-      dotsElement.textContent = dots;
-      dotCount = (dotCount + 1) % 4;
-    }
-    setInterval(animateDots, 1000);
-
     // ── Форматирование денег ────────────────────────────────────────────────
     function formatMoney(n) {
       n = parseInt(n) || 0;
@@ -344,62 +357,14 @@ p {
       return String(n);
     }
 
-    // ── Плашка игрока ────────────────────────────────────────────────────────
-    // Скрыта по умолчанию. Показывается ТОЛЬКО когда данные получены.
-    // Если данных нет совсем — плашка остаётся скрытой.
-    // Если какого-то поля не хватает — вместо него пишется "Неизвестно".
-    var _cardShown = false;
-
-    function hidePlayerCard() {
-      document.getElementById('player-card').style.display = 'none';
-    }
-
-    function showPlayerCard(data) {
-      // Игрока нет в базе (found === false) или данных совсем нет — плашку не показываем
-      if (!data || data.found === false) { hidePlayerCard(); return; }
-
-      // Нет ни одного осмысленного поля — плашку не показываем
-      var hasAny = data.rpname || data.rank || data.playTime ||
-                   data.wallet || data.wallet === 0 || data.avatar;
-      if (!hasAny) { hidePlayerCard(); return; }
-
-      function orUnknown(v) {
-        return (v === undefined || v === null || v === '') ? 'Неизвестно' : v;
-      }
-
-      document.getElementById('pc-name').textContent   = orUnknown(data.rpname);
-      document.getElementById('pc-rank').textContent   = orUnknown(data.rank);
-      document.getElementById('pc-job').textContent    = orUnknown(data.playTime);
-      document.getElementById('pc-wallet').textContent =
-        (data.wallet === undefined || data.wallet === null) ? 'Неизвестно' : formatMoney(data.wallet);
-
-      // Аватар — только если есть; иначе блок убираем (без плейсхолдеров)
-      var avatarBox  = document.getElementById('pc-avatar');
-      var avatarWrap = document.getElementById('pc-avatar-wrap');
-      if (data.avatar) {
-        avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
-        avatarBox.style.display = '';
-      } else {
-        avatarWrap.innerHTML = '';
-        avatarBox.style.display = 'none';
-      }
-
-      _cardShown = true;
-      document.getElementById('player-card').style.display = 'flex';
-    }
-
-    function retryPlayerCard(attempt) {
-      if (_cardShown) return;
-      if (attempt < 3) {
-        setTimeout(function () { loadPlayerCard(_pendingSteamId, attempt + 1); }, attempt * 2000);
-      } else {
-        hidePlayerCard(); // данных нет — просто убираем плашку
-      }
-    }
-
+    // ── Загрузка плашки игрока (с retry при неудаче) ─────────────────────────
     function loadPlayerCard(steamid, attempt) {
-      if (!steamid || steamid === '' || _cardShown) return;
+      if (!steamid || steamid === '') return;
       attempt = attempt || 1;
+
+      var card = document.getElementById('player-card');
+      card.style.display = 'flex';
+      if (attempt === 1) card.classList.add('loading');
 
       var xhr = new XMLHttpRequest();
       xhr.open('GET', 'https://loadscrin.vercel.app/api/player?steamid=' + encodeURIComponent(steamid), true);
@@ -407,20 +372,44 @@ p {
 
       xhr.onreadystatechange = function() {
         if (xhr.readyState !== 4) return;
+        card.classList.remove('loading');
 
         if (xhr.status === 200) {
           try {
             var data = JSON.parse(xhr.responseText);
-            if (data && data.error) throw new Error(data.error);
-            showPlayerCard(data);
-            return;
-          } catch (e) { /* некорректный ответ — ретрай ниже */ }
+            document.getElementById('pc-name').textContent   = data.rpname   || 'Незнакомец';
+            document.getElementById('pc-rank').textContent   = data.rank     || 'Юзер';
+            document.getElementById('pc-job').textContent    = data.playTime || '0 минут';
+            document.getElementById('pc-wallet').textContent = formatMoney(data.wallet);
+            if (data.avatar) {
+              var avatarWrap = document.getElementById('pc-avatar-wrap');
+              avatarWrap.innerHTML = '<img src="' + data.avatar + '" alt="avatar">';
+            }
+          } catch(e) {
+            document.getElementById('pc-name').textContent = 'Ошибка';
+          }
+        } else {
+          // Retry до 3 раз с увеличивающейся задержкой
+          if (attempt < 3) {
+            setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, attempt * 2000);
+          } else {
+            document.getElementById('pc-name').textContent = 'Нет данных';
+          }
         }
-        retryPlayerCard(attempt);
       };
 
-      xhr.onerror   = function() { retryPlayerCard(attempt); };
-      xhr.ontimeout = function() { retryPlayerCard(attempt); };
+      xhr.onerror = function() {
+        card.classList.remove('loading');
+        if (attempt < 3) {
+          setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, attempt * 2000);
+        }
+      };
+
+      xhr.ontimeout = function() {
+        if (attempt < 3) {
+          setTimeout(function() { loadPlayerCard(steamid, attempt + 1); }, 1000);
+        }
+      };
 
       xhr.send();
     }
@@ -443,13 +432,169 @@ p {
 
   <script src="lib/jquery-2.1.1.min.js"></script>
   <script src="lib/jquery.backstretch.min.js"></script>
-  <script src="sleek.js"></script>
+  <script src="sleek.js?v=2"></script>
 
   <script>
-// ── Искры, вылетающие снизу ─────────────────────────────────────────────────
+// ── 3D Плавающие фигуры ────────────────────────────────────────────────────
+(function() {
+  var MAX = 28;
+  var shapes = [];
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function randSign() { return Math.random() < 0.5 ? 1 : -1; }
+
+  function buildCube(size) {
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'width:'+size+'px;height:'+size+'px;position:relative;transform-style:preserve-3d;';
+    var half = size / 2;
+    var colors = [
+      'rgba(140,50,230,0.62)','rgba(90,20,160,0.62)',
+      'rgba(70,15,130,0.62)','rgba(110,35,200,0.62)',
+      'rgba(190,100,255,0.62)','rgba(50,10,100,0.62)'
+    ];
+    var tforms = [
+      'translateZ('+half+'px)',
+      'rotateY(180deg) translateZ('+half+'px)',
+      'rotateY(-90deg) translateZ('+half+'px)',
+      'rotateY(90deg)  translateZ('+half+'px)',
+      'rotateX(90deg)  translateZ('+half+'px)',
+      'rotateX(-90deg) translateZ('+half+'px)'
+    ];
+    tforms.forEach(function(t, i) {
+      var f = document.createElement('div');
+      f.style.cssText = 'position:absolute;width:'+size+'px;height:'+size+'px;background:'+colors[i]+';border:1px solid rgba(210,130,255,0.45);transform:'+t+';box-shadow:inset 0 0 8px rgba(200,100,255,0.3);';
+      wrap.appendChild(f);
+    });
+    return wrap;
+  }
+
+  function buildDiamond(size) {
+    var el = document.createElement('div');
+    el.style.cssText = 'width:'+size+'px;height:'+size+'px;background:rgba(120,40,210,0.58);border:1px solid rgba(200,130,255,0.5);border-radius:4px;box-shadow:0 0 14px rgba(160,80,255,0.45);transform-style:preserve-3d;';
+    return el;
+  }
+
+  function buildTriangle(size) {
+    var el = document.createElement('div');
+    el.style.cssText = 'width:0;height:0;border-left:'+(size/2)+'px solid transparent;border-right:'+(size/2)+'px solid transparent;border-bottom:'+size+'px solid rgba(130,50,220,0.68);filter:drop-shadow(0 0 7px rgba(160,80,255,0.55));';
+    return el;
+  }
+
+  function spawnOne() {
+    var size  = rand(14, 26);
+    var type  = ['cube','diamond','triangle'][Math.floor(Math.random()*3)];
+
+    // Обёртка — абсолютное позиционирование, не тронет поток
+    var outer = document.createElement('div');
+    outer.style.cssText = 'position:fixed;pointer-events:none;z-index:9997;opacity:0;will-change:transform,opacity;perspective:400px;';
+
+    var inner = type === 'cube'     ? buildCube(size)
+              : type === 'diamond'  ? buildDiamond(size)
+              :                       buildTriangle(size);
+
+    outer.appendChild(inner);
+    document.body.appendChild(outer);
+
+    var obj = {
+      el:   outer,
+      // Позиция в пикселях
+      x:    rand(0.05, 0.92) * window.innerWidth,
+      y:    rand(0.05, 0.88) * window.innerHeight,
+      // Скорость дрейфа (px/frame ~60fps)
+      vx:   rand(0.02, 0.08) * randSign(),
+      vy:   rand(0.02, 0.08) * randSign(),
+      // Углы вращения
+      rx: rand(0, 360), ry: rand(0, 360), rz: rand(0, 360),
+      // Скорость вращения (deg/frame) — быстрее
+      vrx: rand(0.5, 1.8) * randSign(),
+      vry: rand(0.5, 1.8) * randSign(),
+      vrz: rand(0.3, 1.0) * randSign(),
+      // Жизнь: фреймы
+      life: 0,
+      maxLife: Math.round(rand(300, 600)), // ~5–10 сек при 60fps
+      phase: 'fadein', // fadein | live | fadeout
+      size: size
+    };
+
+    shapes.push(obj);
+  }
+
+  function tick() {
+    requestAnimationFrame(tick);
+
+    // Спавним если мало
+    if (shapes.length < MAX && Math.random() < 0.06) spawnOne();
+
+    var dead = [];
+
+    shapes.forEach(function(o, idx) {
+      o.life++;
+
+      // Фазы opacity
+      var fadeFrames = 40; // ~0.67 сек
+      var opacity;
+      if (o.life < fadeFrames) {
+        opacity = o.life / fadeFrames;
+      } else if (o.life >= o.maxLife - fadeFrames) {
+        opacity = (o.maxLife - o.life) / fadeFrames;
+      } else {
+        opacity = 1;
+      }
+
+      if (o.life >= o.maxLife) {
+        dead.push(idx);
+        if (o.el.parentNode) o.el.parentNode.removeChild(o.el);
+        return;
+      }
+
+      // Движение
+      o.x  += o.vx;
+      o.y  += o.vy;
+      // Лёгкое притяжение обратно к центру экрана (не улетает за край)
+      o.vx += (window.innerWidth  * 0.5 - o.x) * 0.00015;
+      o.vy += (window.innerHeight * 0.5 - o.y) * 0.00015;
+      // Небольшое случайное блуждание
+      o.vx += (Math.random() - 0.5) * 0.008;
+      o.vy += (Math.random() - 0.5) * 0.008;
+      // Ограничение скорости
+      var maxV = 0.12;
+      if (o.vx >  maxV) o.vx =  maxV;
+      if (o.vx < -maxV) o.vx = -maxV;
+      if (o.vy >  maxV) o.vy =  maxV;
+      if (o.vy < -maxV) o.vy = -maxV;
+
+      // Вращение
+      o.rx += o.vrx;
+      o.ry += o.vry;
+      o.rz += o.vrz;
+
+      o.el.style.opacity   = Math.max(0, Math.min(1, opacity)).toFixed(3);
+      o.el.style.transform = 'translate('+o.x.toFixed(1)+'px,'+o.y.toFixed(1)+'px)';
+      o.el.firstChild.style.transform =
+        'rotateX('+o.rx.toFixed(1)+'deg) rotateY('+o.ry.toFixed(1)+'deg) rotateZ('+o.rz.toFixed(1)+'deg)';
+    });
+
+    // Удаляем мёртвые (с конца чтобы не сбить индексы)
+    for (var i = dead.length - 1; i >= 0; i--) shapes.splice(dead[i], 1);
+  }
+
+  // Запускаем первые фигуры по одной с задержкой
+  for (var i = 0; i < MAX; i++) {
+    (function(delay){ setTimeout(spawnOne, delay); })(i * rand(150, 400));
+  }
+
+  tick();
+})();
+
+
+</script>
+
+<script>
+// ── Фиолетовые частицы: звёзды, пыль, осколки кристаллов, вспышки ──────────
+// Подобраны под фон: звёздное небо, светящаяся пыль и летающие осколки
 (function() {
   var canvas = document.createElement('canvas');
-  canvas.id = 'sparks';
+  canvas.id = 'fx-canvas';
   document.body.appendChild(canvas);
   var ctx = canvas.getContext('2d');
 
@@ -470,65 +615,176 @@ p {
 
   function rand(a, b) { return a + Math.random() * (b - a); }
 
-  var sparks = [];
-  var MAX = 70;
+  // Палитра фиолетовых
+  var PURPLE = [
+    [168, 85, 247],   // #a855f7
+    [192, 132, 252],  // #c084fc
+    [124, 58, 237],   // #7c3aed
+    [233, 213, 255]   // #e9d5ff
+  ];
 
-  function spawn() {
-    if (sparks.length >= MAX) return;
-    sparks.push({
-      x:      rand(0, W),
-      y:      H + rand(0, 16),
-      vx:     rand(-0.25, 0.25),
-      vy:     -rand(0.8, 2.6),
-      life:   0,
-      maxLife: rand(70, 200),
-      size:   rand(1, 2.6),
-      // Хэллоуин: чередуем оранжевый и фиолетовый
-      hue:    Math.random() < 0.5 ? rand(18, 38) : rand(255, 290)
+  // ── Звёзды (мерцающие точки, преимущественно сверху) ──
+  var stars = [];
+  for (var i = 0; i < 65; i++) {
+    stars.push({
+      x: rand(0, 1), y: rand(0, 0.78),
+      r: rand(0.4, 1.5),
+      phase: rand(0, Math.PI * 2),
+      speed: rand(0.008, 0.03),
+      base: rand(0.2, 0.55)
     });
   }
 
+  // ── Светящаяся пыль (мягкие фиолетовые частицы) ──
+  var motes = [];
+  for (var i = 0; i < 46; i++) {
+    motes.push({
+      x: rand(0, W), y: rand(0, H),
+      vx: rand(-0.14, 0.14),
+      vy: -rand(0.04, 0.22),
+      r: rand(1, 3.4),
+      c: PURPLE[Math.floor(rand(0, PURPLE.length))],
+      phase: rand(0, Math.PI * 2),
+      wob: rand(0.006, 0.018),
+      alpha: rand(0.2, 0.6)
+    });
+  }
+
+  // ── Осколки кристаллов (как на фоне) ──
+  var shards = [];
+  for (var i = 0; i < 12; i++) {
+    shards.push({
+      x: rand(0, W), y: rand(0, H),
+      vx: rand(-0.12, 0.12),
+      vy: -rand(0.05, 0.16),
+      h: rand(7, 20),
+      rot: rand(0, Math.PI * 2),
+      vrot: rand(-0.012, 0.012),
+      phase: rand(0, Math.PI * 2)
+    });
+  }
+
+  // ── Редкие вспышки-искры ──
+  var glints = [];
+  var glintTimer = 40;
+
+  function spawnGlint() {
+    glints.push({
+      x: rand(0.05, 0.95) * W,
+      y: rand(0.05, 0.8) * H,
+      life: 0,
+      max: Math.round(rand(35, 65)),
+      s: rand(6, 16)
+    });
+  }
+
+  var t = 0;
+
   function tick() {
     requestAnimationFrame(tick);
-
-    // Спавним несколько искр за кадр
-    for (var i = 0; i < 3; i++) if (Math.random() < 0.55) spawn();
+    t++;
 
     ctx.clearRect(0, 0, W, H);
-    ctx.globalCompositeOperation = 'lighter';
 
-    for (var i = sparks.length - 1; i >= 0; i--) {
-      var s = sparks[i];
-      s.life++;
-      if (s.life >= s.maxLife) { sparks.splice(i, 1); continue; }
-
-      // Движение: вверх с затуханием + лёгкое дрожание вбок
-      s.vy *= 0.995;
-      s.x  += s.vx + Math.sin((s.life + i * 13) * 0.05) * 0.3;
-      s.y  += s.vy;
-      s.vx += rand(-0.02, 0.02);
-
-      // Прозрачность: быстрый всплеск и плавное затухание
-      var t = s.life / s.maxLife;
-      var alpha = t < 0.15 ? t / 0.15 : 1 - (t - 0.15) / 0.85;
-
-      // След (короткая линия по направлению скорости)
-      ctx.strokeStyle = 'hsla(' + s.hue.toFixed(0) + ', 95%, 70%, ' + (alpha * 0.55).toFixed(3) + ')';
-      ctx.lineWidth   = s.size;
-      ctx.lineCap     = 'round';
+    // Звёзды
+    for (var i = 0; i < stars.length; i++) {
+      var st = stars[i];
+      var a = st.base + 0.45 * (0.5 + 0.5 * Math.sin(t * st.speed + st.phase));
+      ctx.fillStyle = 'rgba(232, 224, 255, ' + a.toFixed(3) + ')';
       ctx.beginPath();
-      ctx.moveTo(s.x, s.y);
-      ctx.lineTo(s.x - s.vx * 4, s.y - s.vy * 4);
-      ctx.stroke();
-
-      // Яркое ядро искры
-      ctx.fillStyle = 'hsla(' + s.hue.toFixed(0) + ', 100%, 88%, ' + alpha.toFixed(3) + ')';
-      ctx.beginPath();
-      ctx.arc(s.x, s.y, s.size * 0.6, 0, Math.PI * 2);
+      ctx.arc(st.x * W, st.y * H, st.r, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    ctx.globalCompositeOperation = 'source-over';
+    // Светящаяся пыль
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      m.x += m.vx + Math.sin(t * m.wob + m.phase) * 0.16;
+      m.y += m.vy;
+      if (m.y < -10) { m.y = H + 10; m.x = rand(0, W); }
+      if (m.x < -10) m.x = W + 10;
+      if (m.x > W + 10) m.x = -10;
+
+      var pulse = 0.5 + 0.5 * Math.sin(t * 0.02 + m.phase);
+      var alpha = m.alpha * (0.45 + 0.55 * pulse);
+      var col = m.c;
+      var g = ctx.createRadialGradient(m.x, m.y, 0, m.x, m.y, m.r * 4);
+      g.addColorStop(0, 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',' + alpha.toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(' + col[0] + ',' + col[1] + ',' + col[2] + ',0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, m.r * 4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // светлое ядро
+      ctx.fillStyle = 'rgba(255, 255, 255, ' + (alpha * 0.5).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, m.r * 0.55, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Осколки кристаллов
+    for (var i = 0; i < shards.length; i++) {
+      var s = shards[i];
+      s.x += s.vx;
+      s.y += s.vy;
+      s.rot += s.vrot;
+      if (s.y < -30) { s.y = H + 30; s.x = rand(0, W); }
+      if (s.x < -30) s.x = W + 30;
+      if (s.x > W + 30) s.x = -30;
+
+      var tw = 0.35 + 0.4 * (0.5 + 0.5 * Math.sin(t * 0.025 + s.phase));
+      var w = s.h * 0.3;
+
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.rot);
+      ctx.beginPath();
+      ctx.moveTo(0, -s.h);
+      ctx.lineTo(w, 0);
+      ctx.lineTo(0, s.h);
+      ctx.lineTo(-w, 0);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(76, 29, 149, ' + (tw * 0.55).toFixed(3) + ')';
+      ctx.strokeStyle = 'rgba(216, 180, 254, ' + tw.toFixed(3) + ')';
+      ctx.lineWidth = 1;
+      ctx.shadowColor = 'rgba(168, 85, 247, 0.9)';
+      ctx.shadowBlur = 8;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.shadowBlur = 0;
+
+    // Вспышки-искры
+    glintTimer--;
+    if (glintTimer <= 0 && glints.length < 4) {
+      spawnGlint();
+      glintTimer = Math.round(rand(60, 160));
+    }
+    for (var i = glints.length - 1; i >= 0; i--) {
+      var gl = glints[i];
+      gl.life++;
+      if (gl.life >= gl.max) { glints.splice(i, 1); continue; }
+      var p = gl.life / gl.max;
+      var k = Math.sin(Math.PI * p);
+      var len = gl.s * (0.5 + k);
+
+      ctx.save();
+      ctx.translate(gl.x, gl.y);
+      ctx.strokeStyle = 'rgba(240, 233, 255, ' + (k * 0.85).toFixed(3) + ')';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(0, -len); ctx.lineTo(0, len);
+      ctx.moveTo(-len, 0); ctx.lineTo(len, 0);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(216, 180, 254, ' + (k * 0.5).toFixed(3) + ')';
+      ctx.beginPath();
+      ctx.moveTo(-len * 0.45, -len * 0.45); ctx.lineTo(len * 0.45, len * 0.45);
+      ctx.moveTo(len * 0.45, -len * 0.45); ctx.lineTo(-len * 0.45, len * 0.45);
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   tick();
