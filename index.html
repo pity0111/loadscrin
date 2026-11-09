@@ -352,11 +352,14 @@ p {
     // ── Адрес API. Если домен другой — поменяй здесь ─────────────────────────
     var API_BASE = 'https://loadscrin.vercel.app/api';
 
-    // Всего попыток получить данные (данные шлёт Lua при подключении,
-    // поэтому первые секунды ответ может быть found:false — это нормально)
+    // Сколько попыток получить данные. Первые секунды ответ может быть
+    // found:false — данные из sv.db ещё едут в облако.
     var CARD_MAX_ATTEMPTS = 14;
+
     var _cardAttempts = 0;
     var _cardStarted  = false;
+    var _cardFilled   = false;   // на плашке уже что-то показано
+    var _lastSteamId  = null;
 
     // ── Форматирование денег ────────────────────────────────────────────────
     function formatMoney(n) {
@@ -366,27 +369,62 @@ p {
       return String(n);
     }
 
+    // ── Заполнение плашки тем, что пришло ───────────────────────────────────
+    function applyPlayerData(data) {
+      var card = document.getElementById('player-card');
+      card.classList.remove('loading');
+      _cardFilled = true;
+
+      if (data.rpname) document.getElementById('pc-name').textContent = data.rpname;
+      if (data.rank)   document.getElementById('pc-rank').textContent = data.rank;
+      if (data.wallet !== null && data.wallet !== undefined) {
+        document.getElementById('pc-wallet').textContent = formatMoney(data.wallet);
+      }
+      if (data.playTime !== null && data.playTime !== undefined) {
+        document.getElementById('pc-job').textContent = data.playTime;
+      }
+      if (data.avatar) {
+        document.getElementById('pc-avatar-wrap').innerHTML =
+          '<img src="' + data.avatar + '" alt="avatar">';
+      }
+    }
+
+    // Все ли поля на месте (если нет — продолжаем опрос: данные могут дообновиться)
+    function isCardComplete(data) {
+      return data.rpname   !== null && data.rpname   !== undefined &&
+             data.rank     !== null && data.rank     !== undefined &&
+             data.wallet   !== null && data.wallet   !== undefined &&
+             data.playTime !== null && data.playTime !== undefined;
+    }
+
     // ── Плашка игрока: одна попытка запроса ──────────────────────────────────
     function fetchPlayerCard(steamid) {
       _cardAttempts++;
       var attempt = _cardAttempts;
       var card = document.getElementById('player-card');
       card.style.display = 'flex';
-      card.classList.add('loading');   // shimmer, пока данных нет
+      if (!_cardFilled) card.classList.add('loading');   // shimmer, пока данных нет
 
       var done = false;
 
       function retry() {
         if (done) return;
         done = true;
-        if (attempt >= CARD_MAX_ATTEMPTS) {
+        if (_lastSteamId !== steamid) return;   // игрок уже другой
+
+        var limit = _cardFilled ? CARD_MAX_ATTEMPTS + 8 : CARD_MAX_ATTEMPTS;
+        if (attempt >= limit) {
           card.classList.remove('loading');
-          document.getElementById('pc-name').textContent = 'Нет данных';
+          if (!_cardFilled) {
+            document.getElementById('pc-name').textContent = 'Нет данных';
+          }
           return;
         }
         // Плавно увеличиваем паузу: 1.8с → 5с
         var delay = Math.min(1200 + attempt * 600, 5000);
-        setTimeout(function() { fetchPlayerCard(steamid); }, delay);
+        setTimeout(function() {
+          if (_lastSteamId === steamid) fetchPlayerCard(steamid);
+        }, delay);
       }
 
       var xhr = new XMLHttpRequest();
@@ -403,16 +441,9 @@ p {
           // found:false — сервер ещё не получил данные от Lua, пробуем позже
           if (!data || data.found === false) { retry(); return; }
 
-          done = true;
-          card.classList.remove('loading');
-          document.getElementById('pc-name').textContent   = data.rpname   || 'Незнакомец';
-          document.getElementById('pc-rank').textContent   = data.rank     || 'Юзер';
-          document.getElementById('pc-job').textContent    = data.playTime || '0 минут';
-          document.getElementById('pc-wallet').textContent = formatMoney(data.wallet);
-          if (data.avatar) {
-            document.getElementById('pc-avatar-wrap').innerHTML =
-              '<img src="' + data.avatar + '" alt="avatar">';
-          }
+          applyPlayerData(data);
+          if (isCardComplete(data)) { done = true; return; }
+          retry();   // часть данных есть, ждём остальные
           return;
         }
 
@@ -424,11 +455,22 @@ p {
       xhr.send();
     }
 
-    // ── Точка входа (защита от двойного вызова из GameDetails и опроса) ──────
+    // ── Точка входа (GameDetails может вызвать её несколько раз) ─────────────
     function loadPlayerCard(steamid) {
-      if (_cardStarted || !steamid || steamid === '') return;
-      _cardStarted = true;
+      if (!steamid || steamid === '') return;
+      if (_cardStarted && steamid === _lastSteamId) return;
+
+      _cardStarted  = true;
+      _lastSteamId  = steamid;
       _cardAttempts = 0;
+      _cardFilled   = false;
+
+      // Страница может жить между загрузками — сбрасываем старые данные
+      document.getElementById('pc-name').textContent   = '—';
+      document.getElementById('pc-rank').textContent   = 'Игрок';
+      document.getElementById('pc-wallet').textContent = '0';
+      document.getElementById('pc-job').textContent    = '—';
+
       fetchPlayerCard(steamid);
     }
 

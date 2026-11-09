@@ -5,11 +5,11 @@
     на загрузочный экран, когда игрок начинает подключаться.
 
     Как работает:
-      1. Игрок начинает подключаться  → хук CheckPassword / событие player_connect
-         скрипт читает данные из SQLite (sv.db: darkrp_player, sam_players)
-         и отправляет их на API (Vercel + Cloudflare D1).
-      2. Загрузочная страница берёт steamid из GameDetails и читает данные
-         с GET /api/player?steamid=... — плашка игрока заполняется.
+      1. При старте карты (и далее периодически) скрипт выгружает данные всех
+         игроков из SQLite (sv.db: darkrp_player, sam_players) в облако —
+         поэтому к моменту захода плашка уже знает игрока.
+      2. Когда игрок начинает подключаться — CheckPassword / PlayerConnect /
+         player_connect / ClientSignOnStateChanged отправляют данные ещё раз.
       3. После спавна (PlayerInitialSpawn) данные обновляются ещё раз
          (добавляются работа, актуальные деньги/имя из DarkRP-переменных).
 
@@ -28,6 +28,20 @@ local DEBUG   = true                                      -- лог в серв�
 
 local COOLDOWN = 3     -- минимум секунд между пушами одного игрока
 local SPAWN_DELAY = 3  -- задержка обновления данных после спавна (сек)
+
+-- Повторные пуши после подключения (сек от первого). Нужны на случай, если
+-- в первый момент база ещё читается/обновляется — один из пусков дойдёт.
+local PUSH_RETRIES = { 8, 20, 40 }
+
+-- ── Полная синхронизация sv.db → D1 ─────────────────────────────────────────
+-- Самое важное: данные попадают в облако ДО того, как игрок увидит загрузочный
+-- экран. При смене карты хуки подключения вообще не срабатывают, поэтому
+-- без этой синхронизации плашка остаётся пустой.
+local SYNC_ON_START = true    -- синхронизировать сразу после старта карты
+local SYNC_DELAY    = 15      -- через сколько секунд после старта карты
+local SYNC_INTERVAL = 1800    -- повторная синхронизация (сек), 0 = выключить
+local SYNC_LIMIT    = 500     -- максимум игроков за один проход
+local SYNC_SPACING  = 0.35    -- пауза между запросами при синхронизации (сек)
 -- ════════════════════════════════════════════════════════════════════════════
 
 local function Log(msg)
@@ -36,11 +50,14 @@ local function Log(msg)
          Color(230, 230, 230, 255), tostring(msg), "\n")
 end
 
+-- Секрет должен быть "серьёзной" строкой: только латиница и цифры,
+-- минимум 8 символов. Такая проверка ловит и забытый дефолтный текст,
+-- и запрещённые символы (пробелы, кириллица, & и = ломают URL запроса).
 local function IsConfigured()
-    return ENABLED
-        and isstring(SECRET)
-        and SECRET ~= ""
-        and SECRET ~= "ЗАМЕНИ_МЕНЯ_НА_СЛУЧАЙНУЮСТРОКУ"
+    if not ENABLED then return false end
+    if not isstring(SECRET) or #SECRET < 8 then return false end
+    if SECRET:find("[^%w]") then return false end
+    return true
 end
 
 -- ── base64url ────────────────────────────────────────────────────────────────
@@ -87,7 +104,11 @@ local SID64_PATTERN = "^%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d$"
 local SID_PATTERN   = "^STEAM_[01]:[01]:%d+$"
 
 local function ToSteam64(v)
-    if isnumber(v) then v = tostring(v) end
+    if isnumber(v) then
+        -- SteamID64 из sql.Query может прийти числом; tostring() даст
+        -- экспоненциальную запись и потеряет точность, поэтому форматируем
+        if v >= 1e15 then v = string.format("%.0f", v) else v = tostring(v) end
+    end
     if not isstring(v) or v == "" then return nil end
     if v:match(SID64_PATTERN) then return v end
     local up = v:upper()
@@ -241,7 +262,7 @@ local lastPush = {}
 
 local function Send(data)
     if not IsConfigured() then
-        Log("SECRET не настроен — отправка отключена (отредактируй начало файла)")
+        Log("SECRET не настроен или содержит запрещённые символы — нужна латиница/цифры, минимум 8 (отредактируй начало файла)")
         return
     end
     if not data or not data.steamid then return end
@@ -319,27 +340,158 @@ local function PushLive(ply)
     Send(data)
 end
 
+-- ═══════════════════ ПОЛНАЯ СИНХРОНИЗАЦИЯ sv.db → D1 ════════════════════════
+-- Читает СПИСОК всех игроков из базы и по одному отправляет их данные в облако.
+-- Это гарантирует, что к моменту захода игрока его данные уже в D1, даже если
+-- хуки подключения не сработали (смена карты, реконнект и т.п.).
+local syncQueue  = {}
+local syncQueued = {}
+local syncActive = false
+
+local function SyncStep()
+    local sid = table.remove(syncQueue, 1)
+    if not sid then
+        syncActive = false
+        syncQueued = {}
+        Log("Синхронизация завершена")
+        return
+    end
+    syncQueued[sid] = nil
+
+    local data = CollectDBData(sid)
+    if HasData(data) then
+        lastPush[sid] = CurTime()
+        Send(data)
+    end
+
+    timer.Simple(SYNC_SPACING, SyncStep)
+end
+
+local function EnqueueSync(sid)
+    if not sid or syncQueued[sid] then return end
+    syncQueued[sid] = true
+    syncQueue[#syncQueue + 1] = sid
+end
+
+-- Добавляет в очередь все SteamID из таблицы (колонку ищем автоматически)
+local function QueueFromTable(tbl, cols, idNames)
+    if #cols == 0 then return end
+    local col = FindCol(cols, unpack(idNames))
+    if not col then return end
+
+    local rows = sql.Query(
+        "SELECT " .. col .. " AS loadscrin_sid FROM " .. tbl ..
+        " LIMIT " .. math.floor(SYNC_LIMIT)
+    )
+    if not istable(rows) then return end
+
+    for _, r in ipairs(rows) do
+        -- берём единственное значение из строки (имя колонки может отличаться)
+        for _, v in pairs(r) do
+            EnqueueSync(ToSteam64(v))
+            break
+        end
+    end
+end
+
+local function SyncAll(reason)
+    local before = #syncQueue
+
+    QueueFromTable("darkrp_player", GetColumns("darkrp_player"), { "uid", "steamid", "steamid64" })
+    QueueFromTable("sam_players",   GetColumns("sam_players"),   { "steamid", "steamid64", "uid" })
+
+    local added = #syncQueue - before
+    Log("Синхронизация (" .. tostring(reason) .. "): " .. added .. " игрок(ов) в очереди")
+
+    if #syncQueue > 0 and not syncActive then
+        syncActive = true
+        timer.Simple(1, SyncStep)
+    end
+end
+
 -- ═══════════════════════════ ХУКИ ПОДКЛЮЧЕНИЯ ═══════════════════════════════
 if not IsConfigured() then
-    Log("!! ВНИМАНИЕ: задай SECRET в начале sv_loadscreen_push.lua !!")
+    Log("!! ВНИМАНИЕ: SECRET не задан или содержит запрещённые символы (нужна латиница/цифры, минимум 8) !!")
+end
+
+-- Серия повторных пушей для одного игрока.
+-- Каждый новый вызов отменяет предыдущую серию (по номеру поколения).
+local burstGen  = {}
+local lastBurst = {}
+
+local function Burst(steamid64, name, tag)
+    if not steamid64 then return end
+
+    burstGen[steamid64] = (burstGen[steamid64] or 0) + 1
+    local gen = burstGen[steamid64]
+
+    Log(tag .. ": отправляю данные для " .. steamid64)
+
+    local function attempt()
+        if burstGen[steamid64] ~= gen then return end   -- серию отменили
+        local ply = player.GetBySteamID64 and player.GetBySteamID64(steamid64)
+        if IsValid(ply) then
+            PushLive(ply)          -- игрок уже в мире — берём живые данные DarkRP
+        else
+            PushDB(steamid64, name) -- ещё грузится — читаем из sv.db
+        end
+    end
+
+    attempt()
+    for _, delay in ipairs(PUSH_RETRIES) do
+        timer.Simple(delay, attempt)
+    end
+end
+
+-- Не дёргаем серию чаще, чем раз в 10 секунд на игрока
+-- (CheckPassword, player_connect и signon срабатывают почти одновременно)
+local function MaybeBurst(steamid64, name, tag)
+    if not steamid64 then return end
+    local now = CurTime()
+    if lastBurst[steamid64] and (now - lastBurst[steamid64]) < 10 then return end
+    lastBurst[steamid64] = now
+    Burst(steamid64, name, tag)
 end
 
 -- 1. Самый ранний момент: игрок только начал подключаться
 hook.Add("CheckPassword", "loadscrin_push_checkpassword", function(steamid64, ip, svPass, clPass, name)
     if not ENABLED then return end
-    local sid = ToSteam64(steamid64)
-    if sid then PushDB(sid, name) end
+    MaybeBurst(ToSteam64(steamid64), name, "CheckPassword")
     -- ничего не возвращаем: на проверку пароля не влияем
 end)
 
--- 2. Событие подключения (есть ник игрока — подходит для новых игроков)
-gameevent.Listen("player_connect", function(ev)
+-- 2. Хук подключения (не срабатывает при смене карты, но ловит новых игроков)
+hook.Add("PlayerConnect", "loadscrin_push_playerconnect", function(name, ip)
     if not ENABLED then return end
-    local sid = ToSteam64(ev.steamid or ev.networkid)
-    if sid then PushDB(sid, ev.name) end
+    for _, ply in ipairs(player.GetAll()) do
+        if IsValid(ply) and ply:Nick() == name then
+            MaybeBurst(ToSteam64(ply:SteamID64()), name, "PlayerConnect")
+            return
+        end
+    end
 end)
 
--- 3. После спавна — обновляем данные (работа, деньги, имя из DarkRP)
+-- 3. Игровое событие подключения: содержит networkid (SteamID)
+gameevent.Listen("player_connect", function(ev)
+    if not ENABLED then return end
+    MaybeBurst(ToSteam64(ev.networkid or ev.steamid), ev.name, "player_connect")
+end)
+
+-- 4. Игрок прошёл авторизацию в Steam (есть и валидный Player, и SteamID)
+hook.Add("PlayerAuthed", "loadscrin_push_authed", function(ply, steamid)
+    if not ENABLED then return end
+    local sid = ToSteam64(steamid) or (IsValid(ply) and ToSteam64(ply:SteamID64()))
+    MaybeBurst(sid, IsValid(ply) and ply:Nick() or nil, "PlayerAuthed")
+end)
+
+-- 5. Steam подтвердил SteamID (самый ранний момент с готовым SteamID)
+--    Внимание: у этого хука НЕТ аргумента Player — только name, steamID, ownerID
+hook.Add("NetworkIDValidated", "loadscrin_push_netvalidated", function(name, steamid, ownerid)
+    if not ENABLED then return end
+    MaybeBurst(ToSteam64(steamid) or ToSteam64(ownerid), name, "NetworkIDValidated")
+end)
+
+-- 6. После спавна — обновляем данные (работа, деньги, имя из DarkRP)
 hook.Add("PlayerInitialSpawn", "loadscrin_push_initialspawn", function(ply)
     if not ENABLED or not IsValid(ply) or ply:IsBot() then return end
     timer.Simple(SPAWN_DELAY, function()
@@ -347,11 +499,28 @@ hook.Add("PlayerInitialSpawn", "loadscrin_push_initialspawn", function(ply)
     end)
 end)
 
--- Периодическая чистка кэша таймеров (чтобы таблица не росла бесконечно)
+-- 7. Синхронизация всей базы при старте карты и далее периодически.
+--    Именно это делает плашку непустой при обычном заходе (и при смене карты).
+if ENABLED and IsConfigured() then
+    if SYNC_ON_START then
+        timer.Simple(SYNC_DELAY, function() SyncAll("старт карты") end)
+    end
+    if SYNC_INTERVAL and SYNC_INTERVAL > 0 then
+        timer.Create("loadscrin_sync", SYNC_INTERVAL, 0, function() SyncAll("периодическая") end)
+    end
+end
+
+-- Периодическая чистка кэшей (чтобы таблицы не росли бесконечно)
 timer.Create("loadscrin_push_cleanup", 300, 0, function()
     local now = CurTime()
     for sid, t in pairs(lastPush) do
         if now - t > 120 then lastPush[sid] = nil end
+    end
+    for sid, t in pairs(lastBurst) do
+        if now - t > 120 then lastBurst[sid] = nil end
+    end
+    for sid, gen in pairs(burstGen) do
+        if not lastBurst[sid] then burstGen[sid] = nil end
     end
 end)
 
@@ -376,4 +545,12 @@ concommand.Add("loadscrin_test", function(ply, _, args)
         Log("В базе по этому SteamID ничего нет — отправляю пустую запись (тест канала)")
         Send(data)
     end
+end)
+
+-- loadscrin_syncall — вручную запустить полную синхронизацию sv.db → D1.
+-- Полезно после установки/обновления скрипта: сразу заливает всех игроков,
+-- не дожидаясь старта карты.
+concommand.Add("loadscrin_syncall", function(ply)
+    if IsValid(ply) and not ply:IsAdmin() then return end
+    SyncAll("команда")
 end)
